@@ -14,7 +14,7 @@ datasource db {
 }
 
 // ==========================================
-// USER & AUTHENTICATION
+// customer & AUTHENTICATION
 // ==========================================
 
 model Customer {
@@ -30,7 +30,7 @@ model Customer {
   
   oauthAccounts   OauthAccount[]
   tokens          Token[]
-  addresses       UserAddress[]
+  addresses       customerAddress[]
   orders          Order[]
   complaints      Complaint[]
 
@@ -80,11 +80,11 @@ enum Role {
 
 model OauthAccount {
   id                String       @id @default(uuid())
-  userId            String       @map("user_id") @db.Uuid
+  customerId        String       @map("customer_id") @db.Uuid
   provider          AuthProvider
   providerAccountId String       @map("provider_account_id")
 
-  customer          Customer     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer          Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
@@ -101,18 +101,18 @@ enum AuthProvider {
 }
 
 model Token {
-  id        String    @id @default(uuid())
-  userId    String    @map("user_id") @db.Uuid
-  token     String    @unique
-  type      TokenType
-  expiresAt DateTime  @map("expires_at")
-  isUsed    Boolean   @default(false) @map("is_used")
+  id            String    @id @default(uuid())
+  customerId    String    @map("customer_id") @db.Uuid
+  token         String    @unique
+  type          TokenType
+  expiresAt     DateTime  @map("expires_at")
+  isUsed        Boolean   @default(false) @map("is_used")
 
-  customer  Customer  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
 
   @@map("tokens")
 }
@@ -126,34 +126,34 @@ enum TokenType {
 // LOCATION & OUTLET
 // ==========================================
 
-model UserAddress {
-  id                   String    @id @default(uuid()) @db.Uuid
-  userId               String    @map("user_id") @db.Uuid
-  recipientName        String    @map("recipient_name")
-  recipientPhoneNumber String    @map("recipient_phone_number")
-  label                String
-  address              String    @db.Text
-  districtId           Int       @map("district_id")
-  districtName         String    @map("district_name")
-  cityId               Int       @map("city_id")
-  cityName             String    @map("city_name")
-  provinceId           Int       @map("province_id")
-  provinceName         String    @map("province_name")
-  postalCode           String    @map("postal_code")
-  notes                String?   @db.Text
-  latitude             Float
-  longitude            Float
-  isPrimary            Boolean   @default(false) @map("is_primary")
+model customerAddress {
+  id                       String    @id @default(uuid()) @db.Uuid
+  customerId               String    @map("customer_id") @db.Uuid
+  recipientName            String    @map("recipient_name")
+  recipientPhoneNumber     String    @map("recipient_phone_number")
+  label                    String
+  address                  String    @db.Text
+  districtId               Int       @map("district_id")
+  districtName             String    @map("district_name")
+  cityId                   Int       @map("city_id")
+  cityName                 String    @map("city_name")
+  provinceId               Int       @map("province_id")
+  provinceName             String    @map("province_name")
+  postalCode               String    @map("postal_code")
+  notes                    String?   @db.Text
+  latitude                 Float
+  longitude                Float
+  isPrimary                Boolean   @default(false) @map("is_primary")
 
-  customer             Customer  @relation(fields: [userId], references: [id])
-  ordersPickup         Order[]   @relation("PickupAddress")
-  ordersDelivery       Order[]   @relation("DeliveryAddress")
+  customer                 Customer  @relation(fields: [customerId], references: [id])
+  ordersPickup             Order[]   @relation("PickupAddress")
+  ordersDelivery           Order[]   @relation("DeliveryAddress")
 
-  createdAt            DateTime  @default(now()) @map("created_at")
-  updatedAt            DateTime  @updatedAt @map("updated_at")
-  deletedAt            DateTime? @map("deleted_at")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+  deletedAt                DateTime? @map("deleted_at")
 
-  @@map("user_addresses")
+  @@map("customer_addresses")
 }
 
 model Outlet {
@@ -258,8 +258,8 @@ model Order {
   admin               Employee?     @relation("AdminOrders", fields: [adminId], references: [id])
   driverPickup        Employee?     @relation("DriverPickupOrders", fields: [driverPickupId], references: [id])
   driverDelivery      Employee?     @relation("DriverDeliveryOrders", fields: [driverDeliveryId], references: [id])
-  pickupAddress       UserAddress   @relation("PickupAddress", fields: [pickupAddressId], references: [id])
-  deliveryAddress     UserAddress   @relation("DeliveryAddress", fields: [deliveryAddressId], references: [id])
+  pickupAddress       customerAddress   @relation("PickupAddress", fields: [pickupAddressId], references: [id])
+  deliveryAddress     customerAddress   @relation("DeliveryAddress", fields: [deliveryAddressId], references: [id])
 
   statusLogs          OrderStatus[]
   orderItems          OrderItem[]
