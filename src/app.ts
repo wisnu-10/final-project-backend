@@ -1,10 +1,19 @@
 import express, { Request, Response, NextFunction } from "express";
+import authRouter from "./modules/auth/auth.router";
+import cookieParser from "cookie-parser";
+import { corsOptions } from "./config/cors.config";
+import cors from "cors";
+import passport from "./config/passport.config";
 
 const PORT = process.env.PORT || 8000;
 const app = express();
 
+app.use(cors(corsOptions));
 app.use(express.json());
+app.use(cookieParser());
+app.use(passport.initialize());
 
+app.use("/auth", authRouter)
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.log(err);
