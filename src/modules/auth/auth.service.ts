@@ -56,7 +56,7 @@ export const authService = {
 
     const templateDir = path.resolve(__dirname, "../../templates");
 
-    const templatePath = path.join(templateDir, "account-activation.html");
+    const templatePath = path.join(templateDir, "email-templates.html");
 
     const templateSource = fs.readFileSync(templatePath, "utf-8");
 
@@ -65,6 +65,11 @@ export const authService = {
     const html = compiledTemplate({
       email: email,
       activationLink: `${POS_APP_URL}/auth/activation-password/${activationToken}`,
+      greeting: "Welcome Anak Baik! 🧺",
+      description:
+        "Thanks for joining dilaundryin! We're excited to help you keep your clothes fresh and clean. To get started, you just need to set up your password and activate your account.",
+      cta: "Setup Password & Activate",
+      expired: "1 hour",
     });
 
     await transporter.sendMail({
@@ -80,7 +85,7 @@ export const authService = {
     const payload = jwt.verify(token, JWT_ACCOUNT_ACTIOVATION_SECRET_KEY!) as {
       customerId: string;
     };
-
+ 
     const hashedPassword = await hashing(password);
 
     await prisma.customer.update({
@@ -106,7 +111,7 @@ export const authService = {
     if (findCustomerByEmail.password === null)
       throw AppError("Invalid email or password", 401);
 
-    const passwordMatch = hashMatch(password, findCustomerByEmail.password);
+    const passwordMatch = await hashMatch(password, findCustomerByEmail.password);
 
     if (!passwordMatch) throw AppError("Invalid email or password", 401);
 
@@ -161,7 +166,7 @@ export const authService = {
 
     const templateDir = path.resolve(__dirname, "../../templates");
 
-    const templatePath = path.join(templateDir, "reset-password.html");
+    const templatePath = path.join(templateDir, "email-templates.html");
 
     const templateSource = fs.readFileSync(templatePath, "utf-8");
 
@@ -169,7 +174,12 @@ export const authService = {
 
     const html = compiledTemplate({
       email: email,
-      resetPasswordLink: `${POS_APP_URL}/auth/reset-password/${resetToken}`,
+      activationLink: `${POS_APP_URL}/auth/reset-password/${resetToken}`,
+      greeting: "Reset Your Password 🔑",
+      description:
+        "We received a request to reset the password for your dilaundryin account. No worries—it happens to the best of us! Click the button below to choose a new password.",
+      cta: "Reset My Password",
+      expired: "15 minute",
     });
 
     await transporter.sendMail({
@@ -207,7 +217,7 @@ export const authService = {
               type: "RESET_PASSWORD",
               token: token,
               isUsed: true,
-              expiresAt: addMinutes(new Date(), 60),
+              expiresAt: addMinutes(new Date(), 15),
             },
           ],
         },
