@@ -34,19 +34,23 @@ router.get(
   jwtVerify(JWT_TOKEN_SECRET_KEY!),
   authController.session,
 );
+
 router.post(
   "/forgot-password",
   authForgotPasswordValidator,
   expressRequestValidation,
   authController.forgotPassword,
 );
+
 router.post(
   "/reset-password",
   authActivationValidator,
   expressRequestValidation,
   authController.resetPassword,
 );
+
 router.post("/logout", authController.logout);
+
 router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"] }),
