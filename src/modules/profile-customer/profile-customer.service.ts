@@ -17,6 +17,14 @@ import Handlebars from "handlebars";
 
 export const profileCustomerService = {
   async getProfile(customerId: string) {
+    const findCustomerById = await prisma.customer.findUnique({
+      where: {
+        id: customerId,
+      },
+    });
+
+    if (!findCustomerById) throw AppError("Account not found", 404);
+    
     const customer = await prisma.customer.findUnique({
       where: {
         id: customerId,
@@ -83,7 +91,7 @@ export const profileCustomerService = {
       },
     });
 
-    if (!findCustomerById) throw AppError("Account not found", 400);
+    if (!findCustomerById) throw AppError("Account not found", 404);
 
     const existingEmailCustomer = await prisma.customer.findUnique({
       where: {
@@ -126,7 +134,7 @@ export const profileCustomerService = {
   },
 
   async confirmEmail(token: string) {
-    if (!token) throw AppError("token not found", 400);
+    if (!token) throw AppError("token not found", 404);
 
     const payload = jwt.verify(token, JWT_UPDATE_EMAIL_SECRET_KEY!) as {
       customerId: string;
@@ -157,7 +165,7 @@ export const profileCustomerService = {
       },
     });
 
-    if (!findCustomerById) throw AppError("Account not found", 400);
+    if (!findCustomerById) throw AppError("Account not found", 404);
 
     if (findCustomerById.password === null)
       throw AppError("Invalid email or password", 401);

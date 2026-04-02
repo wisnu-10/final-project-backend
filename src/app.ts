@@ -5,6 +5,7 @@ import { corsOptions } from "./config/cors.config";
 import cors from "cors";
 import passport from "./config/passport.config";
 import profileCustomerRouter from "./modules/profile-customer/profile-customer.router";
+import addressCustomerRouter from "./modules/address-customer/address-customer.router";
 
 const PORT = process.env.PORT || 8000;
 const app = express();
@@ -16,6 +17,7 @@ app.use(passport.initialize());
 
 app.use("/auth", authRouter)
 app.use("/profile", profileCustomerRouter)
+app.use("/address", addressCustomerRouter)
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.log(err);
