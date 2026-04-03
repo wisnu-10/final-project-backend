@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { AddressCustomerDTO } from "../../types/addressCustomer.dto";
 import { addressCustomerService } from "./address-customer.service";
-import { isPrimary } from "node:cluster";
 
 export const addressCustomerController = {
   async createAddress(req: Request, res: Response) {
@@ -59,6 +58,22 @@ export const addressCustomerController = {
         addresses,
       },
     });
+  },
+
+  async getById(req: Request, res: Response) {
+    const { customerId } = res.locals.payload;
+    const { addressId } = req.params
+
+    const address = await addressCustomerService.getById(customerId, addressId as string);
+
+    res.status(200).json({
+      success: true,
+      message: "Address retrieved successfully",
+      data: {
+        address
+      }
+    });
+
   },
 
   async deleteAddress(req: Request, res: Response) {

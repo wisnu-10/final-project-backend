@@ -1,6 +1,12 @@
+import { cookie } from "express-validator";
+
 const { body } = require("express-validator");
 
 export const addressValidator = [
+  cookie("accessToken")
+      .notEmpty()
+      .withMessage("The login session can't be found, please log in first"),
+      
   // Recipient Details
   body("recipientName")
     .notEmpty()

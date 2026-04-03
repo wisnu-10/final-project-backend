@@ -235,9 +235,9 @@ export const addressCustomerService = {
       });
 
       return await tx.customerAddress.update({
-        where:{
+        where: {
           id: existingAddress.id,
-          deletedAt: null
+          deletedAt: null,
         },
         data: {
           customerId,
@@ -262,15 +262,15 @@ export const addressCustomerService = {
   },
 
   async getAddresses(customerId: string) {
-     const existingAddress = await prisma.customerAddress.findFirst({
-       where: {
-         customerId: customerId,
-       },
-     });
+    const existingAddress = await prisma.customerAddress.findFirst({
+      where: {
+        customerId: customerId,
+      },
+    });
 
-     if (!existingAddress) {
-       throw AppError("Address not found", 404);
-     }
+    if (!existingAddress) {
+      throw AppError("Address not found", 404);
+    }
 
     return await prisma.customerAddress.findMany({
       where: {
@@ -295,24 +295,48 @@ export const addressCustomerService = {
     });
   },
 
-  async deleteAddress(customerId: string){
+  async getById(customerId: string, addressId: string) {
+    return await prisma.customerAddress.findFirst({
+      where: {
+        customerId: customerId,
+        id: addressId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        recipientName: true,
+        recipientPhoneNumber: true,
+        label: true,
+        address: true,
+        districtName: true,
+        cityName: true,
+        provinceName: true,
+        postalCode: true,
+        notes: true,
+        isPrimary: true,
+        latitude: true,
+        longitude: true,
+      },
+    });
+  },
+
+  async deleteAddress(customerId: string) {
     const findAddress = await prisma.customerAddress.findFirst({
       where: {
         customerId: customerId,
         deletedAt: null,
-      }
-    })
+      },
+    });
 
-    if(!findAddress) throw AppError("Address not found", 404);
+    if (!findAddress) throw AppError("Address not found", 404);
 
     return await prisma.customerAddress.update({
       where: {
-        id: findAddress.id
+        id: findAddress.id,
       },
       data: {
         deletedAt: new Date(),
-      }
-    })
-
-  }
+      },
+    });
+  },
 };
