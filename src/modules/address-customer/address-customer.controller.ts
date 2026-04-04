@@ -21,10 +21,11 @@ export const addressCustomerController = {
 
   async updateAddress(req: Request, res: Response) {
     const { customerId } = res.locals.payload;
+    const { id } = req.params as { id: string };
 
     const address = req.body as AddressCustomerDTO;
 
-    await addressCustomerService.updateAddress(customerId, address);
+    await addressCustomerService.updateAddress(customerId, id, address);
 
     res.status(200).json({
       success: true,
@@ -41,7 +42,7 @@ export const addressCustomerController = {
         note: address.notes,
         latitude: address.latitude,
         longitude: address.longitude,
-        isPrimary: address.isPrimary
+        isPrimary: address.isPrimary,
       },
     });
   },
@@ -62,31 +63,35 @@ export const addressCustomerController = {
 
   async getById(req: Request, res: Response) {
     const { customerId } = res.locals.payload;
-    const { addressId } = req.params
+    const { addressId } = req.params;
 
-    const address = await addressCustomerService.getById(customerId, addressId as string);
+    const address = await addressCustomerService.getById(
+      customerId,
+      addressId as string,
+    );
 
     res.status(200).json({
       success: true,
       message: "Address retrieved successfully",
       data: {
-        address
-      }
+        address,
+      },
     });
-
   },
 
   async deleteAddress(req: Request, res: Response) {
     const { customerId } = res.locals.payload;
 
-    const result = await addressCustomerService.deleteAddress(customerId);
+    const { id }= req.params
+
+    const result = await addressCustomerService.deleteAddress(customerId, id as string);
 
     res.status(200).json({
       success: true,
       message: "Address deleted successfully",
       data: {
-        result
-      }
-    })
+        id
+      },
+    });
   },
 };

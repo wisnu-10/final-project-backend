@@ -133,6 +133,7 @@ export const addressCustomerService = {
 
   async updateAddress(
     customerId: string,
+    addressId: string,
     {
       recipientName,
       recipientPhoneNumber,
@@ -152,6 +153,8 @@ export const addressCustomerService = {
     const existingAddress = await prisma.customerAddress.findFirst({
       where: {
         customerId: customerId,
+        id: addressId,
+        deletedAt: null,
       },
     });
 
@@ -308,8 +311,11 @@ export const addressCustomerService = {
         recipientPhoneNumber: true,
         label: true,
         address: true,
+        districtId: true,
         districtName: true,
+        cityId: true,
         cityName: true,
+        provinceId: true,
         provinceName: true,
         postalCode: true,
         notes: true,
@@ -320,23 +326,21 @@ export const addressCustomerService = {
     });
   },
 
-  async deleteAddress(customerId: string) {
-    const findAddress = await prisma.customerAddress.findFirst({
+  async deleteAddress(customerId: string, id: string) {
+    const findAddress = await prisma.customerAddress.update({
       where: {
+        id: id,
         customerId: customerId,
         deletedAt: null,
       },
+      data: {
+        deletedAt: new Date()
+      }
     });
 
     if (!findAddress) throw AppError("Address not found", 404);
 
-    return await prisma.customerAddress.update({
-      where: {
-        id: findAddress.id,
-      },
-      data: {
-        deletedAt: new Date(),
-      },
-    });
+    return {findAddress}
+
   },
 };
