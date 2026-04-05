@@ -23,15 +23,6 @@ export const addressCustomerService = {
       isPrimary,
     }: AddressCustomerDTO,
   ) {
-    const existingAddress = await prisma.customerAddress.findFirst({
-      where: {
-        customerId: customerId,
-      },
-    });
-
-    if (!existingAddress) {
-      throw AppError("Address not found", 404);
-    }
 
     /* ======================= PROVONSI  ======================= */
     const provRes = await axios.get(
@@ -150,6 +141,7 @@ export const addressCustomerService = {
       isPrimary,
     }: AddressCustomerDTO,
   ) {
+
     const existingAddress = await prisma.customerAddress.findFirst({
       where: {
         customerId: customerId,
@@ -239,7 +231,7 @@ export const addressCustomerService = {
 
       return await tx.customerAddress.update({
         where: {
-          id: existingAddress.id,
+          id: addressId,
           deletedAt: null,
         },
         data: {
@@ -265,15 +257,6 @@ export const addressCustomerService = {
   },
 
   async getAddresses(customerId: string) {
-    const existingAddress = await prisma.customerAddress.findFirst({
-      where: {
-        customerId: customerId,
-      },
-    });
-
-    if (!existingAddress) {
-      throw AppError("Address not found", 404);
-    }
 
     return await prisma.customerAddress.findMany({
       where: {
