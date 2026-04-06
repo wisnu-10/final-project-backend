@@ -43,18 +43,9 @@ router.patch(
 
 router.patch("/confirm-email", profileCustomerController.confirmEmail);
 
-router.post(
-  "/verify-password",
-  jwtVerify(JWT_TOKEN_SECRET_KEY!),
-  roleverify(["customer"]),
-  verifyPasswordValidator,
-  expressRequestValidation,
-  profileCustomerController.verifyPassword,
-);
-
 router.patch(
   "/update-password",
-  jwtVerifyProfile(JWT_UPDATE_PASSWORD_SECRET_KEY!),
+  jwtVerify(JWT_TOKEN_SECRET_KEY!),
   roleverify(["customer"]),
   updatePasswordValidator,
   expressRequestValidation,

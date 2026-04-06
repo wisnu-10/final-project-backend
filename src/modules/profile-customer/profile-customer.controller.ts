@@ -9,7 +9,7 @@ export const profileCustomerController = {
 
     const customer = await profileCustomerService.getProfile(customerId);
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: "Get profile success",
       data: customer,
@@ -66,39 +66,16 @@ export const profileCustomerController = {
     });
   },
 
-  async verifyPassword(req: Request, res: Response) {
-    const { customerId } = res.locals.payload;
-
-    const { oldPassword } = req.body;
-
-    const { token } = await profileCustomerService.verifyPassword(
-      customerId,
-      oldPassword,
-    );
-
-    res.cookie("updatePasswordToken", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 15 * 60 * 1000,
-      path: "/",
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "Verify is successfully",
-      data: [],
-    });
-  },
-
   async updatePassword(req: Request, res: Response) {
     const { customerId } = res.locals.payload;
 
-    const { newPassword } = req.body;
+    const { oldPassword, newPassword } = req.body;
 
     await profileCustomerService.updatePassword(
       customerId,
-      newPassword,
+      oldPassword,
+      newPassword
+
     );
 
     res.status(200).json({
