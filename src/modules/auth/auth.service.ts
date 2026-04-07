@@ -15,6 +15,7 @@ import Handlebars from "handlebars";
 import jwt from "jsonwebtoken";
 import { hashing, hashMatch } from "../../helpers/bcrypt.helper";
 import { addMinutes } from "date-fns";
+import { profile } from "node:console";
 
 export const authService = {
   async register({
@@ -130,6 +131,7 @@ export const authService = {
       role: findCustomerByEmail.role,
       token: token,
       firstName: findCustomerByEmail.firstName,
+      profilePicture: findCustomerByEmail?.profilePicture,
     };
   },
 
@@ -144,6 +146,7 @@ export const authService = {
       firstName: findUserById?.firstName,
       email: findUserById?.email,
       role: findUserById?.role,
+      profilePicture: findUserById?.profilePicture
     };
   },
 

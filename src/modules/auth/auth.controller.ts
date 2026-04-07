@@ -67,7 +67,7 @@ export const authController = {
   async session(req: Request, res: Response) {
     const { customerId } = res.locals.payload;
 
-    const { firstName, email, role } = await authService.session(customerId);
+    const { firstName, email, role, profilePicture } = await authService.session(customerId);
 
     res.status(200).json({
       success: true,
@@ -76,6 +76,7 @@ export const authController = {
         firstName,
         email,
         role,
+        profilePicture
       },
     });
   },

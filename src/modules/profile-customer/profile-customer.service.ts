@@ -17,6 +17,14 @@ import Handlebars from "handlebars";
 
 export const profileCustomerService = {
   async getProfile(customerId: string) {
+    const findCustomerById = await prisma.customer.findUnique({
+      where: {
+        id: customerId,
+      },
+    });
+
+    if (!findCustomerById) throw AppError("Account not found", 404);
+
     const customer = await prisma.customer.findUnique({
       where: {
         id: customerId,
@@ -30,10 +38,20 @@ export const profileCustomerService = {
         profilePicture: true,
         isVerified: true,
         createdAt: true,
+        password: true,
       },
     });
 
-    return customer;
+    if (!customer) {
+      return null;
+    }
+
+    const { password, ...safeCustomerData } = customer;
+
+    return {
+      ...safeCustomerData,
+      hasPassword: !!password,
+    };
   },
 
   async updateProfile(
@@ -83,7 +101,7 @@ export const profileCustomerService = {
       },
     });
 
-    if (!findCustomerById) throw AppError("Account not found", 400);
+    if (!findCustomerById) throw AppError("Account not found", 404);
 
     const existingEmailCustomer = await prisma.customer.findUnique({
       where: {
@@ -126,7 +144,7 @@ export const profileCustomerService = {
   },
 
   async confirmEmail(token: string) {
-    if (!token) throw AppError("token not found", 400);
+    if (!token) throw AppError("token not found", 404);
 
     const payload = jwt.verify(token, JWT_UPDATE_EMAIL_SECRET_KEY!) as {
       customerId: string;
@@ -150,36 +168,9 @@ export const profileCustomerService = {
     });
   },
 
-  async verifyPassword(customerId: string, oldPassword: string) {
-    const findCustomerById = await prisma.customer.findUnique({
-      where: {
-        id: customerId,
-      },
-    });
-
-    if (!findCustomerById) throw AppError("Account not found", 400);
-
-    if (findCustomerById.password === null)
-      throw AppError("Invalid email or password", 401);
-
-    const passwordMatch = await hashMatch(
-      oldPassword,
-      findCustomerById.password,
-    );
-
-    if (!passwordMatch) throw AppError("Invalid email or password", 401);
-
-    const token = jwtCreateToken(
-      { customerId: findCustomerById.id, role: findCustomerById.role },
-      JWT_UPDATE_PASSWORD_SECRET_KEY!,
-      { expiresIn: "15m" },
-    );
-
-    return { token };
-  },
-
   async updatePassword(
     customerId: string,
+    oldPassword: string,
     newPassword: string,
   ) {
     const findCustomerById = await prisma.customer.findUnique({
@@ -191,7 +182,14 @@ export const profileCustomerService = {
     if (!findCustomerById) throw AppError("Account not found", 400);
 
     if (findCustomerById.password === null)
-      throw AppError("Invalid email or password", 401);
+      throw AppError("Invalid password", 401);
+
+    const passwordMatch = await hashMatch(
+      oldPassword,
+      findCustomerById.password,
+    );
+
+    if (!passwordMatch) throw AppError("Invalid old password", 401);
 
     const hashedPassword = await hashing(newPassword);
 
