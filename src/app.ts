@@ -1,10 +1,12 @@
 import express, { Request, Response, NextFunction } from "express";
 import authRouter from "./modules/auth/auth.router";
+import authEmployeeRouter from "./modules/auth-employee/auth-employee.router";
 import cookieParser from "cookie-parser";
 import { corsOptions } from "./config/cors.config";
 import cors from "cors";
 import passport from "./config/passport.config";
 import profileCustomerRouter from "./modules/profile-customer/profile-customer.router";
+import superAdminRouter from "./modules/super-admin/super-admin.router";
 import addressCustomerRouter from "./modules/address-customer/address-customer.router";
 
 const PORT = process.env.PORT || 8000;
@@ -15,14 +17,16 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(passport.initialize());
 
-app.use("/auth", authRouter)
-app.use("/profile", profileCustomerRouter)
+app.use("/auth", authRouter);
+app.use("/auth-employee", authEmployeeRouter);
+app.use("/profile", profileCustomerRouter);
+app.use("/super-admin", superAdminRouter);
 app.use("/address", addressCustomerRouter)
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.log(err);
   const statusCode = err.expose === true ? err.statusCode : 500;
-  const message = err.expose === true ? err.message : 'Something went wrong';
+  const message = err.expose === true ? err.message : "Something went wrong";
 
   res.status(statusCode).json({
     success: false,
@@ -30,7 +34,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     data: null,
   });
 });
-
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
