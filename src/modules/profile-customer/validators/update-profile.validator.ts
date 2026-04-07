@@ -8,14 +8,20 @@ export const updateProfileValidator = [
   body("firstName")
     .notEmpty()
     .withMessage("First name is required")
-    .isAlpha('en-US', { ignore: ' ' })
-    .withMessage("First name should only contain letters"),
+    .trim()
+    .matches(/^[a-zA-Z\s]+$/)
+    .withMessage("First name should only contain letters")
+    .matches(/^[A-Z][a-z]*(\s[A-Z][a-z]*)*$/)
+    .withMessage("The first letter of each word must be capitalized"),
 
   body("lastName")
     .notEmpty()
     .withMessage("Last name is required")
-    .isAlpha('en-US', { ignore: ' ' })
-    .withMessage("Last name should only contain letters"),
+    .trim() 
+    .matches(/^[a-zA-Z\s]+$/)
+    .withMessage("Last name should only contain letters")
+    .matches(/^[A-Z][a-z]*(\s[A-Z][a-z]*)*$/)
+    .withMessage("The first letter of each word must be capitalized"),
 
   body("phoneNumber")
     .notEmpty()

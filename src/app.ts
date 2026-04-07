@@ -7,6 +7,7 @@ import cors from "cors";
 import passport from "./config/passport.config";
 import profileCustomerRouter from "./modules/profile-customer/profile-customer.router";
 import superAdminRouter from "./modules/super-admin/super-admin.router";
+import addressCustomerRouter from "./modules/address-customer/address-customer.router";
 
 const PORT = process.env.PORT || 8000;
 const app = express();
@@ -20,6 +21,7 @@ app.use("/auth", authRouter);
 app.use("/auth-employee", authEmployeeRouter);
 app.use("/profile", profileCustomerRouter);
 app.use("/super-admin", superAdminRouter);
+app.use("/address", addressCustomerRouter)
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.log(err);
