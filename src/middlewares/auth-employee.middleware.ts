@@ -1,19 +1,18 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import AppError from "../helpers/app-error.helper";
-import { error } from "node:console";
 
-export function jwtVerify(secretKey: string) {
+export function jwtVerifyEmployee(secretKey: string) {
   return function (req: Request, res: Response, next: NextFunction) {
-    const token = req?.cookies?.accessToken;
+    const token = req?.cookies?.employeeAccessToken;
 
     if (!token) throw AppError("Session expired or you are not logged in", 401);
 
     try {
       const payload = jwt.verify(token, secretKey);
-      
+
       res.locals.payload = payload;
-      
+
       next();
     } catch (error: any) {
       return next(
@@ -26,14 +25,14 @@ export function jwtVerify(secretKey: string) {
   };
 }
 
-export function roleverify(allowedRoles: string[]) {
+export function employeeRoleVerify(allowedRoles: string[]) {
   return function (req: Request, res: Response, next: NextFunction) {
     const { role } = res?.locals?.payload;
-    
-    const accessRole = allowedRoles.join(" or ").toLowerCase()
+
+    const accessRole = allowedRoles.join(" or ").toLowerCase();
 
     if (!role || !allowedRoles.includes(role))
-      throw AppError(`only ${accessRole} can access this page`, 401);
+      throw AppError(`Only ${accessRole} can access this page`, 403);
 
     next();
   };
