@@ -311,6 +311,7 @@ model OrderItem {
   orderId        String       @map("order_id") @db.Uuid
   laundryItemId  String       @map("laundry_item_id") @db.Uuid
   quantity       Int
+  subTotal       Decimal?
 
   order          Order        @relation(fields: [orderId], references: [id])
   laundryItem    LaundryItem  @relation(fields: [laundryItemId], references: [id])
@@ -323,14 +324,16 @@ model OrderItem {
 }
 
 model LaundryItem {
-  id         String      @id @default(uuid()) @db.Uuid
-  name       String
+  id            String      @id @default(uuid()) @db.Uuid
+  name          String
+  pricePerUnit  Decimal?
+  isUnit        Boolean    @default(false)
 
-  orderItems OrderItem[]
+  orderItems    OrderItem[]
 
-  createdAt  DateTime    @default(now()) @map("created_at")
-  updatedAt  DateTime    @updatedAt @map("updated_at")
-  deletedAt  DateTime?   @map("deleted_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  deletedAt     DateTime?   @map("deleted_at")
 
   @@map("laundry_items")
 }
@@ -342,13 +345,16 @@ model LaundryItem {
 model Payment {
   id                    String        @id @default(uuid()) @db.Uuid
   orderId               String        @map("order_id") @db.Uuid
-  amount                Decimal
-  method                PaymentMethod
-  gatewayTransactionId  String        @map("gateway_transaction_id")
-  paymentUrl            String        @map("payment_url")
-  status                PaymentStatus @default(pending)
-  expiredAt             DateTime      @map("expired_at")
-  paidAt                DateTime?     @map("paid_at")
+  
+  amount                Decimal?
+  method                PaymentMethod?
+  gatewayTransactionId  String?         @map("gateway_transaction_id")
+  paymentUrl            String?         @map("payment_url")
+  status                PaymentStatus   @default(pending)
+  paidAt                DateTime?       @map("paid_at")
+
+  reminderSentCount     Int             @default(0)
+  lastReminderSentAt    DateTime?       @map("last_reminder_sent_at")
 
   order                 Order         @relation(fields: [orderId], references: [id])
 

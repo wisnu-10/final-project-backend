@@ -167,18 +167,14 @@ export const superAdminService = {
 
     if (!employee) throw AppError("Employee not found", 404);
 
+    const updateData: any = { ...data };
+    if (data.password) {
+      updateData.password = await hashing(data.password);
+    }
+
     const updatedEmployee = await prisma.employee.update({
       where: { id },
-      data: {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phoneNumber: data.phoneNumber,
-        role: data.role,
-        outletId: data.outletId,
-        identityNumber: data.identityNumber,
-        bankAccountNumber: data.bankAccountNumber,
-      },
+      data: updateData,
       include: { outlet: true },
     });
 
