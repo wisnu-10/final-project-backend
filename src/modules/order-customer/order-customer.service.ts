@@ -50,8 +50,8 @@ export const orderCustomerService = {
 
     const outlet = await prisma.outlet.findMany({
       where: {
-        cityName: {
-          in: [findPickupAddress.cityName, findDeliveryAddress.cityName],
+        cityId: {
+          in: [findPickupAddress.cityId, findDeliveryAddress.cityId],
         },
       },
     });
@@ -112,7 +112,7 @@ export const orderCustomerService = {
         customerId,
         pickupAddressId: createOrderPickup.pickupAddressId,
         deliveryAddressId: createOrderPickup.deliveryAddressId,
-        scheduleTime: new Date(createOrderPickup.scheduleTime), // Pastiin jadi objek Date
+        scheduleTime: new Date(createOrderPickup.scheduleTime),
         outletId: nearestOutlet.id,
         distancePickup: nearestOutlet.distance,
         distanceDelivery: nearestDeliveryOutlet.distance,
@@ -125,6 +125,11 @@ export const orderCustomerService = {
             status: "waiting_pickup",
           },
         },
+        payments: {
+          create: {
+            status: "pending",
+          },
+        },
       },
     });
   },
@@ -134,31 +139,53 @@ export const orderCustomerService = {
 
     const whereClause: any = {
       customerId: customerId,
-      // Filter buat Search (misal nyari berdasarkan ID Order atau nama Outlet)
+
       OR: filter.search
         ? [
-            {
-              id: { contains: filter.search, mode: "insensitive" },
-            },
             {
               outlet: {
                 name: { contains: filter.search, mode: "insensitive" },
               },
             },
+            {
+              pickupAddress: {
+                OR: filter.search
+                  ? [
+                      {
+                        address: {
+                          contains: filter.search,
+                          mode: "insensitive",
+                        },
+                      },
+                      {
+                        districtName: {
+                          contains: filter.search,
+                          mode: "insensitive",
+                        },
+                      },
+                      {
+                        cityName: {
+                          contains: filter.search,
+                          mode: "insensitive",
+                        },
+                      },
+                    ]
+                  : undefined,
+              },
+            },
           ]
         : undefined,
 
-      // 2. Filter Payment Status
-      payment: filter.paymentStatus
+      // status untuk beda model (query pake yang di dto)
+      payments: filter.paymentStatus
         ? { status: filter.paymentStatus }
         : undefined,
 
-      // 3. Filter Order Status
+      // some untuk array
       statusLogs: filter.orderStatus
         ? { some: { status: filter.orderStatus } }
         : undefined,
 
-      // 4. Filter Range Tanggal
       createdAt:
         filter.startDate && filter.endDate
           ? {
@@ -168,48 +195,44 @@ export const orderCustomerService = {
           : undefined,
     };
 
-    const [count, totalCount] = await prisma.$transaction(async (tx: any) => {
-      const count = await tx.order.findMany({
+    const [orders, totalOrders] = await Promise.all([
+      prisma.order.findMany({
         where: whereClause,
         skip: skip,
         take: filter.limit,
+        orderBy: { createdAt: "desc" }, // Biasanya user mau liat yang terbaru dulu
         include: {
           pickupAddress: {
-            select: {
-              address: true,
-              districtName: true,
-              cityName: true,
-            },
+            select: { address: true, districtName: true, cityName: true },
           },
           deliveryAddress: {
-            select: {
-              address: true,
-              districtName: true,
-              cityName: true,
-            },
+            select: { address: true, districtName: true, cityName: true },
           },
-          statusLogs: {
-            select: {
-              status: true,
-            },
-          },
-          payment: {
-            select: {
-              status: true,
-            },
-          },
+          outlet: { select: { name: true } },
+          statusLogs: { select: { status: true } },
+          payments: { select: { status: true } },
         },
-      });
+      }),
+      prisma.order.count({ where: whereClause }),
+    ]);
 
-      const totalCount = await tx.order.count({
-        where: whereClause,
-      });
+    const totalPage = Math.ceil(totalOrders / filter.limit);
 
-      return [count, totalCount];
+    return { orders, totalOrders, totalPage };
+  },
+
+  async getById(customerId: string, id: string) {
+    return await prisma.order.findFirst({
+      where: {
+        customerId: customerId,
+      },
+      include: {
+        pickupAddress: true,
+        deliveryAddress: true,
+        outlet: true,
+        statusLogs: { select: { status: true } },
+        payments: { select: { status: true } },
+      },
     });
-
-    const totalPage = Math.ceil(totalCount / filter.limit);
-
-    return [count, totalCount, totalPage];
   },
 };

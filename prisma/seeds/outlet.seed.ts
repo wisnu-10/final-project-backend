@@ -5,7 +5,7 @@ export async function seedOutlets(prisma: PrismaClient) {
 
   const outlets = [
     {
-      name: "NeatWash - BSD City",
+      name: "diLaudnryiin - BSD City",
       address: "Jl. BSD Grand Boulevard No.1",
       districtId: 159,
       districtName: "Pagedangan",
@@ -20,7 +20,7 @@ export async function seedOutlets(prisma: PrismaClient) {
       isActive: true,
     },
     {
-      name: "NeatWash - Tebet",
+      name: "diLaudnryiin - Tebet",
       address: "Jl. Tebet Raya No. 45",
       districtId: 231,
       districtName: "Tebet",
@@ -32,6 +32,21 @@ export async function seedOutlets(prisma: PrismaClient) {
       latitude: -6.2261,
       longitude: 106.8484,
       maxServiceDistance: 5.0,
+      isActive: true,
+    },
+    {
+      name: "NeatWash - Batuceper Express",
+      address: "Jl. Daan Mogot Km. 21, Batuceper",
+      districtId: 3671050, // Contoh ID District untuk Batuceper
+      districtName: "Batuceper",
+      cityId: 3671,
+      cityName: "Tangerang Kota",
+      provinceId: 36,
+      provinceName: "Banten",
+      postalCode: "15122",
+      latitude: -6.1714, // Koordinat titik Batuceper
+      longitude: 106.6741,
+      maxServiceDistance: 20.0, // Radius 6 KM
       isActive: true,
     },
   ];

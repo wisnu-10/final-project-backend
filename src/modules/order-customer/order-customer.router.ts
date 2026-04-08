@@ -5,6 +5,25 @@ import { orderCustomerController } from "./order-customer.controller";
 
 const router = Router();
 
-router.post("/create-pickup",jwtVerify(JWT_TOKEN_SECRET_KEY!), roleverify(["customer"]), orderCustomerController.createOrderPickup);
+router.post(
+  "/create-pickup",
+  jwtVerify(JWT_TOKEN_SECRET_KEY!),
+  roleverify(["customer"]),
+  orderCustomerController.createOrderPickup,
+);
+
+router.get(
+  "/",
+  jwtVerify(JWT_TOKEN_SECRET_KEY!),
+  roleverify(["customer"]),
+  orderCustomerController.getAllOrder,
+);
+
+router.get(
+  "/:id",
+  jwtVerify(JWT_TOKEN_SECRET_KEY!),
+  roleverify(["customer"]),
+  orderCustomerController.getById,
+);
 
 export default router;

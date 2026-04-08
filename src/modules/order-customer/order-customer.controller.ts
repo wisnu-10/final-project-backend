@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import {
-  CreateOrderPickupDTO,
-  GetAllOrderDTO,
-} from "../../types/orderCustomer.dto";
+import { CreateOrderPickupDTO } from "../../types/orderCustomer.dto";
 import { orderCustomerService } from "./order-customer.service";
-import { OrderStatusEnum, PaymentStatus } from "../../../generated/prisma/enums";
+import {
+  OrderStatusEnum,
+  PaymentStatus,
+} from "../../../generated/prisma/enums";
 
 export const orderCustomerController = {
   async createOrderPickup(req: Request, res: Response) {
@@ -14,7 +14,7 @@ export const orderCustomerController = {
 
     await orderCustomerService.createOrderPickup(customerId, createOrderPickup);
 
-    res.status(200).json({
+    res.status(201).json({
       success: true,
       message: "Create order pickup success",
       data: {
@@ -48,6 +48,20 @@ export const orderCustomerController = {
       data: {
         orders: result,
       },
+    });
+  },
+
+  async getById(req: Request, res: Response) {
+    const { customerId } = res.locals.payload;
+
+    const { id } = req.params;
+
+    const result = await orderCustomerService.getById(customerId, id as string);
+
+    res.status(200).json({
+      success: true,
+      message: `Get by id ${id} succes`,
+      data: result,
     });
   },
 };
