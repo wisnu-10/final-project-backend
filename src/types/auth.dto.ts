@@ -26,12 +26,13 @@ export interface RegisterEmployeeDTO {
 }
 
 export interface UpdateEmployeeDTO {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  role: "worker" | "driver" | "outlet_admin" | "super_admin";
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  password?: string;
+  role?: "worker" | "driver" | "outlet_admin" | "super_admin";
   outletId?: string;
-  identityNumber: string;
-  bankAccountNumber: string;
+  identityNumber?: string;
+  bankAccountNumber?: string;
 }
