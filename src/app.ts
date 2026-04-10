@@ -9,6 +9,7 @@ import profileCustomerRouter from "./modules/profile-customer/profile-customer.r
 import superAdminRouter from "./modules/super-admin/super-admin.router";
 import addressCustomerRouter from "./modules/address-customer/address-customer.router";
 import outletRouter from "./modules/outlet/outlet.router";
+import laundryItemRouter from "./modules/outlet/laundry-item/laundry-item.router";
 import regionRouter from "./modules/region/region.router";
 
 const PORT = process.env.PORT || 8000;
@@ -25,6 +26,7 @@ app.use("/profile", profileCustomerRouter);
 app.use("/super-admin", superAdminRouter);
 app.use("/address", addressCustomerRouter);
 app.use("/super-admin/outlets", outletRouter);
+app.use("/laundry-items", laundryItemRouter);
 app.use("/region", regionRouter); // Public — untuk autocomplete dropdown frontend
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

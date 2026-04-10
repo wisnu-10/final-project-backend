@@ -324,18 +324,23 @@ model OrderItem {
 }
 
 model LaundryItem {
-  id            String      @id @default(uuid()) @db.Uuid
-  name          String
-  pricePerUnit  Decimal?
-  isUnit        Boolean    @default(false)
+  id          String      @id @default(uuid()) @db.Uuid
+  name        String
+  pricingType PricingType @default(kiloan) @map("pricing_type")
+  price       Decimal     @default(0) @db.Decimal(10, 2)
 
-  orderItems    OrderItem[]
+  orderItems  OrderItem[]
 
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
-  deletedAt     DateTime?   @map("deleted_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  deletedAt   DateTime?   @map("deleted_at")
 
   @@map("laundry_items")
+}
+
+enum PricingType {
+  kiloan
+  per_item
 }
 
 // ==========================================
