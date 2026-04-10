@@ -65,6 +65,7 @@ export const superAdminService = {
       outletName,
     };
   },
+
   async getEmployees(query: {
     role?: string;
     outletId?: string;
@@ -122,6 +123,7 @@ export const superAdminService = {
       },
     };
   },
+
   async getEmployeeById(id: string) {
     const employee = await prisma.employee.findUnique({
       where: { id, deletedAt: null },
@@ -144,7 +146,8 @@ export const superAdminService = {
       bankAccountNumber: employee.bankAccountNumber,
     };
   },
-  async deleteEmployee(id: string){
+
+  async deleteEmployee(id: string) {
     const employee = await prisma.employee.findUnique({
       where: { id, deletedAt: null },
     });
@@ -160,6 +163,7 @@ export const superAdminService = {
       message: "Employee deleted successfully",
     };
   },
+
   async updateEmployee(id: string, data: UpdateEmployeeDTO) {
     const employee = await prisma.employee.findUnique({
       where: { id, deletedAt: null },
@@ -190,6 +194,20 @@ export const superAdminService = {
       phoneNumber: updatedEmployee.phoneNumber,
       identityNumber: updatedEmployee.identityNumber,
       bankAccountNumber: updatedEmployee.bankAccountNumber,
+    };
+  },
+
+  async getDashboardStats() {
+    const [totalOutlets, totalEmployees, totalOrders] = await Promise.all([
+      prisma.outlet.count({ where: { deletedAt: null } }),
+      prisma.employee.count({ where: { deletedAt: null } }),
+      prisma.order.count({ where: { deletedAt: null } }),
+    ]);
+
+    return {
+      totalOutlets,
+      totalEmployees,
+      activeOrders: totalOrders,
     };
   },
 };
