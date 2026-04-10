@@ -14,6 +14,7 @@ export const superAdminController = {
       data: employee,
     });
   },
+
   async getEmployees(req: Request, res: Response) {
     const { role, outletId, search, page, limit } = req.query;
 
@@ -31,6 +32,7 @@ export const superAdminController = {
       data,
     });
   },
+
   async getEmployeeById(req: Request, res: Response) {
     const { id } = req.params;
 
@@ -42,6 +44,7 @@ export const superAdminController = {
       data,
     });
   },
+
   async deleteEmployee(req: Request, res: Response) {
     const { id } = req.params;
 
@@ -53,6 +56,7 @@ export const superAdminController = {
       data,
     });
   },
+
   async updateEmployee(req: Request, res: Response) {
     const { id } = req.params;
     const data = req.body as UpdateEmployeeDTO;
@@ -63,6 +67,16 @@ export const superAdminController = {
       success: true,
       message: "Employee updated successfully",
       data: employee,
+    });
+  },
+
+  async getDashboardStats(req: Request, res: Response) {
+    const data = await superAdminService.getDashboardStats();
+
+    res.status(200).json({
+      success: true,
+      message: "Dashboard stats fetched successfully",
+      data,
     });
   },
 };
