@@ -210,7 +210,8 @@ export const orderCustomerService = {
           },
           outlet: { select: { name: true } },
           statusLogs: { select: { status: true } },
-          payments: { select: { status: true } },
+          payments: { select: { status: true} },
+         
         },
       }),
       prisma.order.count({ where: whereClause }),
@@ -218,13 +219,14 @@ export const orderCustomerService = {
 
     const totalPage = Math.ceil(totalOrders / filter.limit);
 
-    return { orders, totalOrders, totalPage };
+    return { orders, totalOrders, totalPage, currentPage: filter.page };
   },
 
   async getById(customerId: string, id: string) {
     return await prisma.order.findFirst({
       where: {
         customerId: customerId,
+        id: id,
       },
       include: {
         pickupAddress: true,

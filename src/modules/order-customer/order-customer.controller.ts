@@ -17,9 +17,7 @@ export const orderCustomerController = {
     res.status(201).json({
       success: true,
       message: "Create order pickup success",
-      data: {
-        createOrderPickup,
-      },
+      data: createOrderPickup,
     });
   },
 

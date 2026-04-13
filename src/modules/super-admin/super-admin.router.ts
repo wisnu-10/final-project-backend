@@ -26,5 +26,6 @@ router.put(
 router.get("/get-employees", superAdminController.getEmployees);
 router.get("/get-employee/:id", superAdminController.getEmployeeById);
 router.delete("/delete-employee/:id", superAdminController.deleteEmployee);
+router.get("/dashboard-stats", superAdminController.getDashboardStats);
 
 export default router;
