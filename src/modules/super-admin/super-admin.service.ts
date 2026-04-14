@@ -2,6 +2,12 @@ import { prisma } from "../../config/prisma-client.config";
 import AppError from "../../helpers/app-error.helper";
 import { RegisterEmployeeDTO, UpdateEmployeeDTO } from "../../types/auth.dto";
 import { hashing } from "../../helpers/bcrypt.helper";
+import path from "node:path";
+import fs from "fs";
+import Handlebars from "handlebars";
+import transporter from "../../helpers/nodemailer.helper";
+import { jwtCreateToken } from "../../helpers/jwt.helper";
+import { JWT_ACCOUNT_ACTIOVATION_SECRET_KEY, POS_APP_URL } from "../../config/main.config";
 
 export const superAdminService = {
   async register(data: RegisterEmployeeDTO) {
@@ -47,6 +53,39 @@ export const superAdminService = {
     const employee = await prisma.employee.create({
       data: createData,
     });
+
+    // --- EMAIL VERIFICATION LOGIC ---
+    const activationToken = await jwtCreateToken(
+      { employeeId: employee.id },
+      JWT_ACCOUNT_ACTIOVATION_SECRET_KEY!,
+      { expiresIn: "1d" }
+    );
+
+    const templateDir = path.resolve(__dirname, "../../templates");
+    const templatePath = path.join(templateDir, "email-templates.html");
+    const templateSource = fs.readFileSync(templatePath, "utf-8");
+    const compiledTemplate = Handlebars.compile(templateSource);
+
+    const html = compiledTemplate({
+      email: employee.email,
+      activationLink: `${POS_APP_URL}/auth-employee/verify/${activationToken}`,
+      greeting: `Welcome, ${employee.firstName}! 👔`,
+      description:
+        "An account has been created for you at dilaundryin. To activate your account and verify your email, please click the button below.",
+      cta: "Verify & Activate Account",
+      expired: "24 hours",
+    });
+
+    await transporter.sendMail({
+      to: employee.email,
+      subject: "Employee Account Activation",
+      html: html,
+    }).catch(err => {
+      console.error("Failed to send verification email:", err);
+      // We don't throw error here to not roll back registration, 
+      // but in production we might want to handle this better.
+    });
+    // --------------------------------
 
     // Fetch outlet name separately if outletId exists
     let outletName: string | null = null;
