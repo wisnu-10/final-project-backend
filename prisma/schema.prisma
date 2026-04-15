@@ -254,7 +254,7 @@ model Order {
   startedDeliveryAt   DateTime? @map("started_delivery_at")
   completedDeliveryAt DateTime? @map("completed_delivery_at")
 
-  pricePerKg  Decimal  @map("price_per_kg")
+  pricePerKg  Decimal?  @map("price_per_kg")
   totalWeight Decimal? @map("total_weight")
   totalPrice  Decimal? @map("total_price")
 
@@ -299,6 +299,7 @@ model OrderStatus {
 }
 
 enum OrderStatusEnum {
+  scheduled
   waiting_pickup
   on_the_way_to_outlet
   arrived_outlet
