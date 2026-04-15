@@ -10,6 +10,9 @@ import superAdminRouter from "./modules/super-admin/super-admin.router";
 import addressCustomerRouter from "./modules/address-customer/address-customer.router";
 
 import orderCustomerRouter from "./modules/order-customer/order-customer.router";
+import orderAdminRouter from "./modules/order-admin/order-admin.router";
+import orderWorkerRouter from "./modules/order-worker/order-worker.router";
+import bypassRequestRouter from "./modules/bypass-request/bypass-request.router";
 import outletRouter from "./modules/outlet/outlet.router";
 import laundryItemRouter from "./modules/outlet/laundry-item/laundry-item.router";
 import regionRouter from "./modules/region/region.router";
@@ -28,6 +31,9 @@ app.use("/profile", profileCustomerRouter);
 app.use("/super-admin", superAdminRouter);
 
 app.use("/order", orderCustomerRouter);
+app.use("/order-admin", orderAdminRouter);
+app.use("/order-worker", orderWorkerRouter);
+app.use("/bypass-request", bypassRequestRouter);
 app.use("/address", addressCustomerRouter);
 app.use("/super-admin/outlets", outletRouter);
 app.use("/laundry-items", laundryItemRouter);
