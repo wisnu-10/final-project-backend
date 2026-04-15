@@ -1,5 +1,6 @@
 import {prisma} from "../src/config/prisma-client.config"
 import { seedOutlets } from "./seeds/outlet.seed";
+import { seedBypassRequests } from "./seeds/bypass-request";
 
 async function main() {
   try {
@@ -7,6 +8,9 @@ async function main() {
 
     // Panggil fungsi seed outlet di sini
     await seedOutlets(prisma);
+    
+    // Seed Bypass Requests
+    await seedBypassRequests(prisma);
 
     // Kalau nanti ada seed lain, tinggal tambah di bawahnya
     // await seedUsers(prisma);
