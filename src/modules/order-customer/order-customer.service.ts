@@ -117,9 +117,6 @@ export const orderCustomerService = {
         distancePickup: nearestOutlet.distance,
         distanceDelivery: nearestDeliveryOutlet.distance,
 
-        // Lu harus isi pricePerKg karena di model lu WAJIB (Required)
-        pricePerKg: nearestOutlet.pricePerKg || 10000,
-
         statusLogs: {
           create: {
             status: "waiting_pickup",
@@ -210,8 +207,7 @@ export const orderCustomerService = {
           },
           outlet: { select: { name: true } },
           statusLogs: { select: { status: true } },
-          payments: { select: { status: true} },
-         
+          payments: { select: { status: true } },
         },
       }),
       prisma.order.count({ where: whereClause }),
