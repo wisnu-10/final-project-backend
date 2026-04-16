@@ -39,10 +39,13 @@ export const bypassRequestController = {
 
   async getPendingBypassRequests(req: Request, res: Response) {
     const { outletId } = res.locals.payload;
+    const { page, limit } = req.query;
 
-    const result = await bypassRequestService.getPendingBypassRequests(
-      outletId as string,
-    );
+    const result = await bypassRequestService.getPendingBypassRequests({
+      outletId: outletId as string,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
 
     res.status(200).json({
       success: true,
