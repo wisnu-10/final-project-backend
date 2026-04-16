@@ -17,6 +17,7 @@ import outletRouter from "./modules/outlet/outlet.router";
 import laundryItemRouter from "./modules/outlet/laundry-item/laundry-item.router";
 import regionRouter from "./modules/region/region.router";
 import complaintRouter from "./modules/complaint-customer/complaint-customer-router"
+import { expirySchedule } from "./helpers/jobs/expiry-schema";
 
 const PORT = process.env.PORT || 8000;
 const app = express();
@@ -25,6 +26,8 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 app.use(passport.initialize());
+
+expirySchedule()
 
 app.use("/auth", authRouter);
 app.use("/auth-employee", authEmployeeRouter);

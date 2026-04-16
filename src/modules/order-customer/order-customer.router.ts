@@ -30,4 +30,13 @@ router.get(
   orderCustomerController.getById,
 );
 
+router.post(
+  "/scheduled-pickup",
+  jwtVerify(JWT_TOKEN_SECRET_KEY!),
+  roleverify(["customer"]),
+  createOrderValidator,
+  expressRequestValidation,
+  orderCustomerController.scheduledOrderPickup,
+);
+
 export default router;
