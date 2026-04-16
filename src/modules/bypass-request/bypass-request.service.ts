@@ -160,35 +160,59 @@ export const bypassRequestService = {
   /**
    * Get all pending bypass requests for an outlet (outlet admin view)
    */
-  async getPendingBypassRequests(outletId: string | null) {
+  async getPendingBypassRequests(query: {
+    outletId: string | null;
+    page?: number;
+    limit?: number;
+  }) {
+    const { outletId, page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
+
     if (!outletId) {
       throw AppError("You are not assigned to any outlet", 403);
     }
 
-    return prisma.bypassRequest.findMany({
-      where: {
-        status: "waiting",
+    const where: any = {
+      status: "waiting",
+      deletedAt: null,
+      order: {
+        outletId,
         deletedAt: null,
-        order: {
-          outletId,
-          deletedAt: null,
-        },
       },
-      include: {
-        order: {
-          select: {
-            id: true,
-            customer: {
-              select: { id: true, firstName: true, lastName: true },
+    };
+
+    const [requests, total] = await Promise.all([
+      prisma.bypassRequest.findMany({
+        where,
+        skip,
+        take: Number(limit),
+        include: {
+          order: {
+            select: {
+              id: true,
+              customer: {
+                select: { id: true, firstName: true, lastName: true },
+              },
             },
           },
+          requester: {
+            select: { id: true, firstName: true, lastName: true },
+          },
         },
-        requester: {
-          select: { id: true, firstName: true, lastName: true },
-        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.bypassRequest.count({ where }),
+    ]);
+
+    return {
+      bypassRequests: requests,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: "desc" },
-    });
+    };
   },
 
   /**
