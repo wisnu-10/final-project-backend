@@ -62,4 +62,18 @@ export const orderCustomerController = {
       data: result,
     });
   },
+
+  async scheduledOrderPickup(req: Request, res: Response) {
+      const { customerId } = res.locals.payload;
+
+      const scheduledOrderPickup = req.body as CreateOrderPickupDTO;
+
+      await orderCustomerService.scheduledOrderPickup(customerId, scheduledOrderPickup);
+
+      res.status(201).json({
+        success: true,
+        message: "Scheduled order pickup success",
+        data: scheduledOrderPickup,
+      });
+  }
 };
