@@ -19,11 +19,18 @@ router.post(
 
 router.get("/", jwtVerifyEmployee(JWT_TOKEN_SECRET_KEY!), employeeRoleVerify(["super_admin", "outlet_admin"]), complaintCustomerController.getComplaints)
 
+router.patch(
+  "/:id/resolve",
+  jwtVerifyEmployee(JWT_TOKEN_SECRET_KEY!),
+  employeeRoleVerify(["super_admin", "outlet_admin"]),
+  complaintCustomerController.resolveComplaint
+);
+
 router.get(
   "/:id",
   jwtVerifyEmployee(JWT_TOKEN_SECRET_KEY!),
   employeeRoleVerify(["super_admin", "outlet_admin"]),
-  complaintCustomerController.getCompaintById,
+  complaintCustomerController.getComplaintById,
 );
 
 export default router
