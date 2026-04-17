@@ -60,8 +60,9 @@ model Employee {
   ordersPickup    Order[]         @relation("DriverPickupOrders")
   ordersDelivery  Order[]         @relation("DriverDeliveryOrders")
   statusLogs      OrderStatus[]
-  bypassRequested BypassRequest[] @relation("RequestedBy")
-  bypassApproved  BypassRequest[] @relation("ApprovedBy")
+  bypassRequested    BypassRequest[] @relation("RequestedBy")
+  bypassApproved     BypassRequest[] @relation("ApprovedBy")
+  resolvedComplaints Complaint[]
 
   isVerified Boolean @default(false) @map("is_verified")
   tokens     Token[]
@@ -425,8 +426,12 @@ model Complaint {
   description String          @db.Text
   status      ComplaintStatus
 
-  order    Order    @relation(fields: [orderId], references: [id])
-  customer Customer @relation(fields: [customerId], references: [id])
+  adminResponse String? @db.Text @map("admin_response")
+  resolvedById  String? @map("resolved_by_id") @db.Uuid
+
+  order      Order     @relation(fields: [orderId], references: [id])
+  customer   Customer  @relation(fields: [customerId], references: [id])
+  resolvedBy Employee? @relation(fields: [resolvedById], references: [id])
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
