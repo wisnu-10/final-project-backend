@@ -39,4 +39,11 @@ router.post(
   orderCustomerController.scheduledOrderPickup,
 );
 
+router.patch(
+  "/confirm-order/:id",
+  jwtVerify(JWT_TOKEN_SECRET_KEY!),
+  roleverify(["customer"]),
+  orderCustomerController.confirmOrder
+);
+
 export default router;

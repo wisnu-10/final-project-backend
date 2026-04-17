@@ -356,5 +356,34 @@ export const orderCustomerService = {
         },
       },
     });
+  },
+
+  async confirmOrder(customerId: string, id: string){
+    const existingOrder = await prisma.order.findUnique({
+      where: {
+        id: id,
+        customerId: customerId,
+        statusLogs: {
+          some: {
+            status: "delivering"
+          }
+        }
+      },
+    });
+
+    if(!existingOrder) throw AppError("Order not found", 404)
+
+    return await prisma.order.update({
+      where: {
+        id: id,
+      },
+      data: {
+        statusLogs: {
+          create: {
+            status: "completed"
+          }
+        }
+      },
+    });
   }
 };
