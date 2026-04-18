@@ -20,7 +20,10 @@ export const laundryItemService = {
       data: {
         name: data.name,
         pricingType: data.pricingType,
-        price: data.pricingType === "kiloan" ? 0 : data.price,
+        price:
+          data.pricingType === "kiloan"
+            ? data.price || 10000
+            : data.price || 0,
       },
     });
 
@@ -102,9 +105,12 @@ export const laundryItemService = {
 
     const updatePayload: any = { ...data };
 
-    // If pricing type is changed to kiloan, reset price to 0
-    if (data.pricingType === "kiloan") {
-      updatePayload.price = 0;
+    // If pricing type is changed to kiloan and price is not provided, keep current or default
+    if (data.pricingType === "kiloan" && (!data.price || data.price === 0)) {
+      // only set default if price is not already in updatePayload
+      if (!updatePayload.price) {
+        updatePayload.price = 10000;
+      }
     }
 
     const updatedItem = await prisma.laundryItem.update({

@@ -18,54 +18,58 @@ datasource db {
 // ==========================================
 
 model Customer {
-  id              String         @id @default(uuid()) @db.Uuid
-  firstName       String?        @map("first_name")
-  lastName        String?        @map("last_name")
-  email           String         @unique
-  phoneNumber     String?        @map("phone_number")
-  password        String?
-  role            Role           @default(customer)
-  profilePicture  String?        @map("profile_picture")
-  isVerified      Boolean        @default(false) @map("is_verified")
-  
-  oauthAccounts   OauthAccount[]
-  tokens          Token[]
-  addresses       customerAddress[]
-  orders          Order[]
-  complaints      Complaint[]
+  id             String  @id @default(uuid()) @db.Uuid
+  firstName      String? @map("first_name")
+  lastName       String? @map("last_name")
+  email          String  @unique
+  phoneNumber    String? @map("phone_number")
+  password       String?
+  role           Role    @default(customer)
+  profilePicture String? @map("profile_picture")
+  isVerified     Boolean @default(false) @map("is_verified")
 
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @updatedAt @map("updated_at")
-  deletedAt       DateTime?      @map("deleted_at")
+  oauthAccounts OauthAccount[]
+  tokens        Token[]
+  addresses     customerAddress[]
+  orders        Order[]
+  complaints    Complaint[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("customers")
 }
 
 model Employee {
-  id                 String         @id @default(uuid()) @db.Uuid
-  outletId           String?         @db.Uuid @map("outlet_id")
-  firstName          String         @map("first_name")
-  lastName           String         @map("last_name")
-  email              String         @unique
-  phoneNumber        String         @map("phone_number")
-  password           String
-  role               Role
-  profilePicture     String?        @map("profile_picture")
-  identityNumber     String         @unique @map("identity_number")
-  bankAccountNumber  String         @map("bank_account_number")
+  id                String  @id @default(uuid()) @db.Uuid
+  outletId          String? @map("outlet_id") @db.Uuid
+  firstName         String  @map("first_name")
+  lastName          String  @map("last_name")
+  email             String  @unique
+  phoneNumber       String  @map("phone_number")
+  password          String
+  role              Role
+  profilePicture    String? @map("profile_picture")
+  identityNumber    String  @unique @map("identity_number")
+  bankAccountNumber String  @map("bank_account_number")
 
-  outlet             Outlet?         @relation(fields: [outletId], references: [id])
-  attendances        Attendance[]
-  ordersAdmin        Order[]        @relation("AdminOrders")
-  ordersPickup       Order[]        @relation("DriverPickupOrders")
-  ordersDelivery     Order[]        @relation("DriverDeliveryOrders")
-  statusLogs         OrderStatus[]
+  outlet          Outlet?         @relation(fields: [outletId], references: [id])
+  attendances     Attendance[]
+  ordersAdmin     Order[]         @relation("AdminOrders")
+  ordersPickup    Order[]         @relation("DriverPickupOrders")
+  ordersDelivery  Order[]         @relation("DriverDeliveryOrders")
+  statusLogs      OrderStatus[]
   bypassRequested    BypassRequest[] @relation("RequestedBy")
   bypassApproved     BypassRequest[] @relation("ApprovedBy")
+  resolvedComplaints Complaint[]
 
-  createdAt          DateTime       @default(now()) @map("created_at")
-  updatedAt          DateTime       @updatedAt @map("updated_at")
-  deletedAt          DateTime?      @map("deleted_at")
+  isVerified Boolean @default(false) @map("is_verified")
+  tokens     Token[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("employees")
 }
@@ -84,11 +88,11 @@ model OauthAccount {
   provider          AuthProvider
   providerAccountId String       @map("provider_account_id")
 
-  customer          Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
-  createdAt         DateTime     @default(now()) @map("created_at")
-  updatedAt         DateTime     @updatedAt @map("updated_at")
-  deletedAt         DateTime?    @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@unique([provider, providerAccountId])
   @@map("oauth_accounts")
@@ -101,18 +105,20 @@ enum AuthProvider {
 }
 
 model Token {
-  id            String    @id @default(uuid())
-  customerId    String    @map("customer_id") @db.Uuid
-  token         String    @unique
-  type          TokenType
-  expiresAt     DateTime  @map("expires_at")
-  isUsed        Boolean   @default(false) @map("is_used")
+  id         String    @id @default(uuid())
+  customerId String?   @map("customer_id") @db.Uuid
+  employeeId String?   @map("employee_id") @db.Uuid
+  token      String    @unique
+  type       TokenType
+  expiresAt  DateTime  @map("expires_at")
+  isUsed     Boolean   @default(false) @map("is_used")
 
-  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  deletedAt     DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("tokens")
 }
@@ -127,57 +133,57 @@ enum TokenType {
 // ==========================================
 
 model customerAddress {
-  id                       String    @id @default(uuid()) @db.Uuid
-  customerId               String    @map("customer_id") @db.Uuid
-  recipientName            String    @map("recipient_name")
-  recipientPhoneNumber     String    @map("recipient_phone_number")
-  label                    String
-  address                  String    @db.Text
-  districtId               Int       @map("district_id")
-  districtName             String    @map("district_name")
-  cityId                   Int       @map("city_id")
-  cityName                 String    @map("city_name")
-  provinceId               Int       @map("province_id")
-  provinceName             String    @map("province_name")
-  postalCode               String    @map("postal_code")
-  notes                    String?   @db.Text
-  latitude                 Float
-  longitude                Float
-  isPrimary                Boolean   @default(false) @map("is_primary")
+  id                   String  @id @default(uuid()) @db.Uuid
+  customerId           String  @map("customer_id") @db.Uuid
+  recipientName        String  @map("recipient_name")
+  recipientPhoneNumber String  @map("recipient_phone_number")
+  label                String
+  address              String  @db.Text
+  districtId           Int     @map("district_id")
+  districtName         String  @map("district_name")
+  cityId               Int     @map("city_id")
+  cityName             String  @map("city_name")
+  provinceId           Int     @map("province_id")
+  provinceName         String  @map("province_name")
+  postalCode           String  @map("postal_code")
+  notes                String? @db.Text
+  latitude             Float
+  longitude            Float
+  isPrimary            Boolean @default(false) @map("is_primary")
 
-  customer                 Customer  @relation(fields: [customerId], references: [id])
-  ordersPickup             Order[]   @relation("PickupAddress")
-  ordersDelivery           Order[]   @relation("DeliveryAddress")
+  customer       Customer @relation(fields: [customerId], references: [id])
+  ordersPickup   Order[]  @relation("PickupAddress")
+  ordersDelivery Order[]  @relation("DeliveryAddress")
 
-  createdAt                DateTime  @default(now()) @map("created_at")
-  updatedAt                DateTime  @updatedAt @map("updated_at")
-  deletedAt                DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("customer_addresses")
 }
 
 model Outlet {
-  id                  String     @id @default(uuid()) @db.Uuid
-  name                String
-  address             String     @db.Text
-  districtId          Int        @map("district_id")
-  districtName        String     @map("district_name")
-  cityId              Int        @map("city_id")
-  cityName            String     @map("city_name")
-  provinceId          Int        @map("province_id")
-  provinceName        String     @map("province_name")
-  postalCode          String     @map("postal_code")
-  latitude            Float
-  longitude           Float
-  maxServiceDistance  Float      @map("max_service_distance")
-  isActive            Boolean    @map("is_active")
+  id                 String  @id @default(uuid()) @db.Uuid
+  name               String
+  address            String  @db.Text
+  districtId         Int     @map("district_id")
+  districtName       String  @map("district_name")
+  cityId             Int     @map("city_id")
+  cityName           String  @map("city_name")
+  provinceId         Int     @map("province_id")
+  provinceName       String  @map("province_name")
+  postalCode         String  @map("postal_code")
+  latitude           Float
+  longitude          Float
+  maxServiceDistance Float   @map("max_service_distance")
+  isActive           Boolean @map("is_active")
 
-  employees           Employee[]
-  orders              Order[]
+  employees Employee[]
+  orders    Order[]
 
-  createdAt           DateTime   @default(now()) @map("created_at")
-  updatedAt           DateTime   @updatedAt @map("updated_at")
-  deletedAt           DateTime?  @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("outlets")
 }
@@ -187,16 +193,16 @@ model Outlet {
 // ==========================================
 
 model Shift {
-  id          String       @id @default(uuid()) @db.Uuid
-  shiftName   String       @map("shift_name")
-  startTime   DateTime     @map("start_time")
-  endTime     DateTime     @map("end_time")
-  
+  id        String   @id @default(uuid()) @db.Uuid
+  shiftName String   @map("shift_name")
+  startTime DateTime @map("start_time")
+  endTime   DateTime @map("end_time")
+
   attendances Attendance[]
 
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
-  deletedAt   DateTime?    @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("shifts")
 }
@@ -211,12 +217,12 @@ model Attendance {
   status     AttendanceStatus
   notes      String?          @db.Text
 
-  employee   Employee         @relation(fields: [employeeId], references: [id])
-  shift      Shift            @relation(fields: [shiftId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id])
+  shift    Shift    @relation(fields: [shiftId], references: [id])
 
-  createdAt  DateTime         @default(now()) @map("created_at")
-  updatedAt  DateTime         @updatedAt @map("updated_at")
-  deletedAt  DateTime?        @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("attendances")
 }
@@ -232,68 +238,69 @@ enum AttendanceStatus {
 // ==========================================
 
 model Order {
-  id                  String        @id @default(uuid()) @db.Uuid
-  outletId            String        @db.Uuid @map("outlet_id")
-  customerId          String        @db.Uuid @map("customer_id")
-  adminId             String?       @db.Uuid @map("admin_id")
-  driverPickupId      String?       @db.Uuid @map("driver_pickup_id")
-  driverDeliveryId    String?       @db.Uuid @map("driver_delivery_id")
-  pickupAddressId     String        @db.Uuid @map("pickup_address_id")
-  deliveryAddressId   String        @db.Uuid @map("delivery_address_id")
+  id                String  @id @default(uuid()) @db.Uuid
+  outletId          String  @map("outlet_id") @db.Uuid
+  customerId        String  @map("customer_id") @db.Uuid
+  adminId           String? @map("admin_id") @db.Uuid
+  driverPickupId    String? @map("driver_pickup_id") @db.Uuid
+  driverDeliveryId  String? @map("driver_delivery_id") @db.Uuid
+  pickupAddressId   String  @map("pickup_address_id") @db.Uuid
+  deliveryAddressId String  @map("delivery_address_id") @db.Uuid
 
-  scheduleTime        DateTime      @map("schedule_time")
-  distancePickup      Float         @map("distance_pickup")
-  distanceDelivery    Float         @map("distance_delivery")
-  startedPickupAt     DateTime?     @map("started_pickup_at")
-  completedPickupAt   DateTime?     @map("completed_pickup_at")
-  startedDeliveryAt   DateTime?     @map("started_delivery_at")
-  completedDeliveryAt DateTime?     @map("completed_delivery_at")
+  scheduleTime        DateTime  @map("schedule_time")
+  distancePickup      Float     @map("distance_pickup")
+  distanceDelivery    Float     @map("distance_delivery")
+  startedPickupAt     DateTime? @map("started_pickup_at")
+  completedPickupAt   DateTime? @map("completed_pickup_at")
+  startedDeliveryAt   DateTime? @map("started_delivery_at")
+  completedDeliveryAt DateTime? @map("completed_delivery_at")
 
-  pricePerKg          Decimal       @map("price_per_kg")
-  totalWeight         Decimal?      @map("total_weight")
-  totalPrice          Decimal?      @map("total_price")
+  pricePerKg  Decimal?  @map("price_per_kg")
+  totalWeight Decimal? @map("total_weight")
+  totalPrice  Decimal? @map("total_price")
 
-  outlet              Outlet        @relation(fields: [outletId], references: [id])
-  customer            Customer      @relation(fields: [customerId], references: [id])
-  admin               Employee?     @relation("AdminOrders", fields: [adminId], references: [id])
-  driverPickup        Employee?     @relation("DriverPickupOrders", fields: [driverPickupId], references: [id])
-  driverDelivery      Employee?     @relation("DriverDeliveryOrders", fields: [driverDeliveryId], references: [id])
-  pickupAddress       customerAddress   @relation("PickupAddress", fields: [pickupAddressId], references: [id])
-  deliveryAddress     customerAddress   @relation("DeliveryAddress", fields: [deliveryAddressId], references: [id])
+  outlet          Outlet          @relation(fields: [outletId], references: [id])
+  customer        Customer        @relation(fields: [customerId], references: [id])
+  admin           Employee?       @relation("AdminOrders", fields: [adminId], references: [id])
+  driverPickup    Employee?       @relation("DriverPickupOrders", fields: [driverPickupId], references: [id])
+  driverDelivery  Employee?       @relation("DriverDeliveryOrders", fields: [driverDeliveryId], references: [id])
+  pickupAddress   customerAddress @relation("PickupAddress", fields: [pickupAddressId], references: [id])
+  deliveryAddress customerAddress @relation("DeliveryAddress", fields: [deliveryAddressId], references: [id])
 
-  statusLogs          OrderStatus[]
-  orderItems          OrderItem[]
-  payments            Payment[]
-  complaints          Complaint[]
-  bypassRequests      BypassRequest[]
+  statusLogs     OrderStatus[]
+  orderItems     OrderItem[]
+  payments       Payment[]
+  complaints     Complaint[]
+  bypassRequests BypassRequest[]
 
-  createdAt           DateTime      @default(now()) @map("created_at")
-  updatedAt           DateTime      @updatedAt @map("updated_at")
-  deletedAt           DateTime?     @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("orders")
 }
 
 model OrderStatus {
-  id         String      @id @default(uuid()) @db.Uuid
-  orderId    String      @map("order_id") @db.Uuid
-  workerId   String?     @map("worker_id") @db.Uuid
-  totalItem  Int?        @map("total_item")
-  startedAt  DateTime?   @map("started_at")
-  finishedAt DateTime?   @map("finished_at")
+  id         String          @id @default(uuid()) @db.Uuid
+  orderId    String          @map("order_id") @db.Uuid
+  workerId   String?         @map("worker_id") @db.Uuid
+  totalItem  Int?            @map("total_item")
+  startedAt  DateTime?       @map("started_at")
+  finishedAt DateTime?       @map("finished_at")
   status     OrderStatusEnum
 
-  order      Order       @relation(fields: [orderId], references: [id])
-  worker     Employee?   @relation(fields: [workerId], references: [id])
+  order  Order     @relation(fields: [orderId], references: [id])
+  worker Employee? @relation(fields: [workerId], references: [id])
 
-  createdAt  DateTime    @default(now()) @map("created_at")
-  updatedAt  DateTime    @updatedAt @map("updated_at")
-  deletedAt  DateTime?   @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("order_statuses")
 }
 
 enum OrderStatusEnum {
+  scheduled
   waiting_pickup
   on_the_way_to_outlet
   arrived_outlet
@@ -307,18 +314,18 @@ enum OrderStatusEnum {
 }
 
 model OrderItem {
-  id             String       @id @default(uuid()) @db.Uuid
-  orderId        String       @map("order_id") @db.Uuid
-  laundryItemId  String       @map("laundry_item_id") @db.Uuid
-  quantity       Int
-  subTotal       Decimal?
+  id            String   @id @default(uuid()) @db.Uuid
+  orderId       String   @map("order_id") @db.Uuid
+  laundryItemId String   @map("laundry_item_id") @db.Uuid
+  quantity      Int
+  subTotal      Decimal?
 
-  order          Order        @relation(fields: [orderId], references: [id])
-  laundryItem    LaundryItem  @relation(fields: [laundryItemId], references: [id])
+  order       Order       @relation(fields: [orderId], references: [id])
+  laundryItem LaundryItem @relation(fields: [laundryItemId], references: [id])
 
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
-  deletedAt      DateTime?    @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("order_items")
 }
@@ -329,11 +336,11 @@ model LaundryItem {
   pricingType PricingType @default(kiloan) @map("pricing_type")
   price       Decimal     @default(0) @db.Decimal(10, 2)
 
-  orderItems  OrderItem[]
+  orderItems OrderItem[]
 
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
-  deletedAt   DateTime?   @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("laundry_items")
 }
@@ -348,24 +355,24 @@ enum PricingType {
 // ==========================================
 
 model Payment {
-  id                    String        @id @default(uuid()) @db.Uuid
-  orderId               String        @map("order_id") @db.Uuid
-  
-  amount                Decimal?
-  method                PaymentMethod?
-  gatewayTransactionId  String?         @map("gateway_transaction_id")
-  paymentUrl            String?         @map("payment_url")
-  status                PaymentStatus   @default(pending)
-  paidAt                DateTime?       @map("paid_at")
+  id      String @id @default(uuid()) @db.Uuid
+  orderId String @map("order_id") @db.Uuid
 
-  reminderSentCount     Int             @default(0)
-  lastReminderSentAt    DateTime?       @map("last_reminder_sent_at")
+  amount               Decimal?
+  method               PaymentMethod?
+  gatewayTransactionId String?        @map("gateway_transaction_id")
+  paymentUrl           String?        @map("payment_url")
+  status               PaymentStatus  @default(pending)
+  paidAt               DateTime?      @map("paid_at")
 
-  order                 Order         @relation(fields: [orderId], references: [id])
+  reminderSentCount  Int       @default(0)
+  lastReminderSentAt DateTime? @map("last_reminder_sent_at")
 
-  createdAt             DateTime      @default(now()) @map("created_at")
-  updatedAt             DateTime      @updatedAt @map("updated_at")
-  deletedAt             DateTime?     @map("deleted_at")
+  order Order @relation(fields: [orderId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("payments")
 }
@@ -384,23 +391,24 @@ enum PaymentMethod {
 }
 
 model BypassRequest {
-  id               String       @id @default(uuid()) @db.Uuid
-  orderId          String       @map("order_id") @db.Uuid
-  requestedBy      String       @map("requested_by") @db.Uuid
-  approvedBy       String       @map("approved_by") @db.Uuid
-  approvedAt       DateTime?    @map("approved_at")
-  notes            String       @db.Text
+  id               String          @id @default(uuid()) @db.Uuid
+  orderId          String          @map("order_id") @db.Uuid
+  requestedBy      String          @map("requested_by") @db.Uuid
+  approvedBy       String?         @map("approved_by") @db.Uuid
+  approvedAt       DateTime?       @map("approved_at")
+  notes            String          @db.Text
   status           BypassStatus
-  expectedQuantity Int          @map("expected_quantity")
-  actualQuantity   Int          @map("actual_quantity")
+  station          OrderStatusEnum
+  expectedQuantity Int             @map("expected_quantity")
+  actualQuantity   Int             @map("actual_quantity")
 
-  order            Order        @relation(fields: [orderId], references: [id])
-  requester        Employee     @relation("RequestedBy", fields: [requestedBy], references: [id])
-  approver         Employee     @relation("ApprovedBy", fields: [approvedBy], references: [id])
+  order     Order     @relation(fields: [orderId], references: [id])
+  requester Employee  @relation("RequestedBy", fields: [requestedBy], references: [id])
+  approver  Employee? @relation("ApprovedBy", fields: [approvedBy], references: [id])
 
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-  deletedAt        DateTime?    @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("bypass_requests")
 }
@@ -418,12 +426,16 @@ model Complaint {
   description String          @db.Text
   status      ComplaintStatus
 
-  order       Order           @relation(fields: [orderId], references: [id])
-  customer    Customer        @relation(fields: [customerId], references: [id])
+  adminResponse String? @db.Text @map("admin_response")
+  resolvedById  String? @map("resolved_by_id") @db.Uuid
 
-  createdAt   DateTime        @default(now()) @map("created_at")
-  updatedAt   DateTime        @updatedAt @map("updated_at")
-  deletedAt   DateTime?       @map("deleted_at")
+  order      Order     @relation(fields: [orderId], references: [id])
+  customer   Customer  @relation(fields: [customerId], references: [id])
+  resolvedBy Employee? @relation(fields: [resolvedById], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("complaints")
 }

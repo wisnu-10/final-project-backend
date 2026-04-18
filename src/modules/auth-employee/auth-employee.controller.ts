@@ -56,4 +56,14 @@ export const authEmployeeController = {
       message: "Employee logged out successfully",
     });
   },
+
+  async verifyEmail(req: Request, res: Response) {
+    const token = req.params.token as string;
+    const data = await authEmployeeService.verifyEmail(token);
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+      data,
+    });
+  },
 };
