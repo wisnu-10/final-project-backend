@@ -22,3 +22,6 @@ export const JWT_UPDATE_PASSWORD_SECRET_KEY =
 export const OPENCAGE_API_KEY = process.env.OPENCAGE_API_KEY;
 export const RAJAONGKIR_API_KEY = process.env.RAJAONGKIR_API_KEY;
 export const RAJAONGKIR_BASE_URL = process.env.RAJAONGKIR_BASE_URL;
+export const MIDTRANS_MERCHANT_ID = process.env.MIDTRANS_MERCHANT_ID;
+export const MIDTRANS_CLIENT_KEY = process.env.MIDTRANS_CLIENT_KEY;
+export const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY;
