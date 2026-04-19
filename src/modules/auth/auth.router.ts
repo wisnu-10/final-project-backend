@@ -65,4 +65,18 @@ router.get(
   authController.authGoogleCallback,
 );
 
+// Employee auth routes
+router.post(
+  "/employee-login",
+  authLoginValidator,
+  expressRequestValidation,
+  authController.employeeLogin,
+);
+
+router.get(
+  "/employee-session",
+  jwtVerify(JWT_TOKEN_SECRET_KEY!),
+  authController.employeeSession,
+);
+
 export default router;

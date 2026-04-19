@@ -8,6 +8,7 @@ import { POS_APP_URL } from "../../config/main.config";
 export const authController = {
   async register(req: Request, res: Response) {
     const register = req.body as RegisterDTO;
+    console.log(register.firstName);
 
     await authService.register(register);
 
@@ -137,5 +138,43 @@ export const authController = {
     });
 
     return res.redirect(`${POS_APP_URL}`);
+  },
+
+  async employeeLogin(req: Request, res: Response) {
+    const { email, password } = req.body;
+
+    const { id, role, outletId, firstName, token } =
+      await authService.employeeLogin({ email, password });
+
+    res.cookie("accessToken", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Employee logged in successfully",
+      data: {
+        id,
+        email,
+        role,
+        outletId,
+        firstName,
+      },
+    });
+  },
+
+  async employeeSession(req: Request, res: Response) {
+    const { employeeId } = res.locals.payload;
+
+    const employee = await authService.employeeSession(employeeId);
+
+    res.status(200).json({
+      success: true,
+      message: "Employee session is valid",
+      data: employee,
+    });
   },
 };

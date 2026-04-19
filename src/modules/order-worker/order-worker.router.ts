@@ -8,14 +8,14 @@ import { JWT_TOKEN_SECRET_KEY } from "../../config/main.config";
 
 const router = Router();
 
-// All routes require worker auth
 router.use(jwtVerifyEmployee(JWT_TOKEN_SECRET_KEY!));
 router.use(employeeRoleVerify(["worker"]));
 
-// Get list of orders assigned to this worker
-router.get("/", orderWorkerController.getWorkerOrders);
-
-// Get limited order detail
+router.get("/my-orders", orderWorkerController.getWorkerOrders);
+router.get("/available", orderWorkerController.getAvailableTasks);
+router.post("/accept", orderWorkerController.acceptTask);
+router.post("/complete", orderWorkerController.completeTask);
+router.get("/history", orderWorkerController.getWorkHistory);
 router.get("/:id", orderWorkerController.getWorkerOrderDetail);
 
 export default router;

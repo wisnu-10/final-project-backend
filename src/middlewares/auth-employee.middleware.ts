@@ -6,18 +6,19 @@ export function jwtVerifyEmployee(secretKey: string) {
   return function (req: Request, res: Response, next: NextFunction) {
     const token = req?.cookies?.employeeAccessToken;
 
-    if (!token) throw AppError("Session expired or you are not logged in", 401);
+    if (!token) {
+      throw AppError("Employee session expired or not logged in", 401);
+    }
 
     try {
       const payload = jwt.verify(token, secretKey);
-
       res.locals.payload = payload;
-
       next();
     } catch (error: any) {
+      console.log("JWT Verification failed for employee token:", error.message);
       return next(
         AppError(
-          "Your session is invalid or has expired. Please login again.",
+          "Employee session is invalid or has expired. Please login again.",
           401,
         ),
       );
