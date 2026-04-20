@@ -195,7 +195,7 @@ export const orderAdminService = {
             phoneNumber: true,
           },
         },
-        outlet: { select: { id: true, name: true, address: true } },
+        outlet: { select: { id: true, name: true, address: true, pricePerKg: true } },
         admin: {
           select: { id: true, firstName: true, lastName: true },
         },
@@ -266,6 +266,7 @@ export const orderAdminService = {
           orderBy: { createdAt: "desc" },
           take: 1,
         },
+        outlet: true,
       },
     });
 
@@ -323,7 +324,8 @@ export const orderAdminService = {
       };
     });
 
-    const weightPrice = data.totalWeight * Number(order.pricePerKg);
+    const currentPricePerKg = Number((order as any).outlet.pricePerKg);
+    const weightPrice = data.totalWeight * currentPricePerKg;
     const totalPrice = weightPrice + totalItemPrice;
 
     const updatedOrder = await prisma.$transaction(async (tx) => {
@@ -331,6 +333,7 @@ export const orderAdminService = {
         where: { id: orderId },
         data: {
           adminId: employeeId,
+          pricePerKg: currentPricePerKg,
           totalWeight: data.totalWeight,
           totalPrice: totalPrice,
         },
@@ -379,17 +382,12 @@ export const orderAdminService = {
       throw AppError("You are not assigned to any outlet", 403);
     }
 
-    // 1. Get current pricePerKg from laundry item named "Laundry Kiloan" or similar
-    const kiloanItem = await prisma.laundryItem.findFirst({
-      where: {
-        pricingType: "kiloan",
-        deletedAt: null,
-      },
+    // 1. Get current pricePerKg from outlet
+    const outlet = await prisma.outlet.findFirst({
+      where: { id: employeeOutletId, deletedAt: null },
     });
-
-    if (!kiloanItem) {
-      throw AppError("Laundry Kiloan pricing not found in system", 400);
-    }
+    if (!outlet) throw AppError("Outlet not found", 404);
+    const pricePerKg = Number(outlet.pricePerKg);
 
     // 2. Validate laundry items exist
     const laundryItemIds = data.orderItems.map((item) => item.laundryItemId);
@@ -409,7 +407,7 @@ export const orderAdminService = {
       }
     });
 
-    const weightPrice = data.totalWeight * Number(kiloanItem.price);
+    const weightPrice = data.totalWeight * pricePerKg;
     const totalPrice = weightPrice + totalItemPrice;
 
     // 4. Get Customer Primary Address (Required by DB Schema)
@@ -436,7 +434,7 @@ export const orderAdminService = {
           customerId: data.customerId,
           outletId: employeeOutletId,
           adminId: employeeId,
-          pricePerKg: kiloanItem.price,
+          pricePerKg: pricePerKg,
           totalWeight: data.totalWeight,
           totalPrice: totalPrice,
           pickupAddressId: customerAddress.id,
@@ -588,5 +586,13 @@ export const orderAdminService = {
       select: { id: true, firstName: true, lastName: true, email: true },
       take: 20,
     });
+  },
+  async getOutletInfo(outletId: string) {
+    const outlet = await prisma.outlet.findUnique({
+      where: { id: outletId as any, deletedAt: null },
+      select: { id: true, name: true, pricePerKg: true },
+    });
+    if (!outlet) throw AppError("Outlet not found", 404);
+    return outlet;
   },
 };

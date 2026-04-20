@@ -177,6 +177,7 @@ model Outlet {
   longitude          Float
   maxServiceDistance Float   @map("max_service_distance")
   isActive           Boolean @map("is_active")
+  pricePerKg         Decimal @default(0) @db.Decimal(10, 2) @map("price_per_kg")
 
   employees Employee[]
   orders    Order[]

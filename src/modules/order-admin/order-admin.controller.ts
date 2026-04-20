@@ -143,4 +143,16 @@ export const orderAdminController = {
       data: result,
     });
   },
+  async getOutletInfo(req: Request, res: Response) {
+    const { outletId } = res.locals.payload;
+    if (!outletId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not assigned to any outlet",
+        data: null,
+      });
+    }
+    const result = await orderAdminService.getOutletInfo(outletId as string);
+    res.status(200).json({ success: true, data: result });
+  },
 };
