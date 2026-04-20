@@ -22,7 +22,7 @@ export const laundryItemService = {
         pricingType: data.pricingType,
         price:
           data.pricingType === "kiloan"
-            ? data.price || 10000
+            ? data.price || 0
             : data.price || 0,
       },
     });
@@ -109,7 +109,7 @@ export const laundryItemService = {
     if (data.pricingType === "kiloan" && (!data.price || data.price === 0)) {
       // only set default if price is not already in updatePayload
       if (!updatePayload.price) {
-        updatePayload.price = 10000;
+        updatePayload.price = 0;
       }
     }
 
