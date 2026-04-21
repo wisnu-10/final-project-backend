@@ -332,7 +332,6 @@ export const orderCustomerService = {
 
     /* ============= set Waktu biar 1 hari =============== */
     const userPickTime = new Date(scheduledOrderPickup.scheduleTime);
-    userPickTime.setDate(userPickTime.getDate() + 1);
 
     return await prisma.order.create({
       data: {

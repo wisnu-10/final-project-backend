@@ -19,11 +19,13 @@ export const paymentCustomerService = {
 
     if (!order) throw AppError("Order not found", 404);
 
+    
+
     const shortOrderId = order.id.slice(0, 8).toUpperCase();
 
     const parameter = {
       transaction_details: {
-        order_id: `DL_${shortOrderId}_${Date.now()}`,
+        order_id: `DL_${shortOrderId}`,
         gross_amount: Number(order.totalPrice),
       },
       customer_details: {

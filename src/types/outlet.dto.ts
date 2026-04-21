@@ -12,6 +12,7 @@ export interface CreateOutletDTO {
   postalCode: string;
   maxServiceDistance: number;
   isActive: boolean;
+  pricePerKg: number;
 }
 
 // Data yang dikirim frontend saat UPDATE outlet
@@ -28,6 +29,7 @@ export interface UpdateOutletDTO {
   postalCode?: string;
   maxServiceDistance?: number;
   isActive?: boolean;
+  pricePerKg?: number;
 }
 
 export interface GetOutletsQuery {

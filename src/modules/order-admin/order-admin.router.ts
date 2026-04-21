@@ -25,6 +25,9 @@ router.get("/customers", orderAdminController.getCustomers);
 // Get workers for this outlet (for worker assignment dropdown)
 router.get("/workers", orderAdminController.getOutletWorkers);
 
+// Get outlet info (price per kg, etc.)
+router.get("/outlet-info", orderAdminController.getOutletInfo);
+
 // Create manual order (walk-in)
 router.post(
   "/create-manual",
