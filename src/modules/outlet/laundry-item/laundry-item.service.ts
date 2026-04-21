@@ -9,21 +9,32 @@ import {
 export const laundryItemService = {
   async createLaundryItem(data: CreateLaundryItemDTO) {
     const existingItem = await prisma.laundryItem.findFirst({
-      where: { name: data.name, deletedAt: null },
+      where: { name: data.name },
     });
 
     if (existingItem) {
-      throw AppError("Laundry item with this name already exists", 409);
+      if (existingItem.deletedAt === null) {
+        throw AppError("Laundry item with this name already exists", 409);
+      }
+
+      // Restore soft-deleted item
+      const restoredItem = await prisma.laundryItem.update({
+        where: { id: existingItem.id },
+        data: {
+          pricingType: data.pricingType,
+          price: data.price || 0,
+          deletedAt: null,
+        },
+      });
+
+      return restoredItem;
     }
 
     const item = await prisma.laundryItem.create({
       data: {
         name: data.name,
         pricingType: data.pricingType,
-        price:
-          data.pricingType === "kiloan"
-            ? data.price || 0
-            : data.price || 0,
+        price: data.price || 0,
       },
     });
 
@@ -96,10 +107,13 @@ export const laundryItemService = {
 
     if (data.name && data.name !== item.name) {
       const duplicate = await prisma.laundryItem.findFirst({
-        where: { name: data.name, deletedAt: null, NOT: { id } },
+        where: { name: data.name, NOT: { id } },
       });
       if (duplicate) {
-        throw AppError("Laundry item with this name already exists", 409);
+        throw AppError(
+          `Laundry item with this name already exists${duplicate.deletedAt ? " (deleted)" : ""}`,
+          409,
+        );
       }
     }
 
