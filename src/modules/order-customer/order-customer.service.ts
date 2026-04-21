@@ -139,38 +139,38 @@ export const orderCustomerService = {
 
       OR: filter.search
         ? [
-            {
-              outlet: {
-                name: { contains: filter.search, mode: "insensitive" },
-              },
+          {
+            outlet: {
+              name: { contains: filter.search, mode: "insensitive" },
             },
-            {
-              pickupAddress: {
-                OR: filter.search
-                  ? [
-                      {
-                        address: {
-                          contains: filter.search,
-                          mode: "insensitive",
-                        },
-                      },
-                      {
-                        districtName: {
-                          contains: filter.search,
-                          mode: "insensitive",
-                        },
-                      },
-                      {
-                        cityName: {
-                          contains: filter.search,
-                          mode: "insensitive",
-                        },
-                      },
-                    ]
-                  : undefined,
-              },
+          },
+          {
+            pickupAddress: {
+              OR: filter.search
+                ? [
+                  {
+                    address: {
+                      contains: filter.search,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
+                    districtName: {
+                      contains: filter.search,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
+                    cityName: {
+                      contains: filter.search,
+                      mode: "insensitive",
+                    },
+                  },
+                ]
+                : undefined,
             },
-          ]
+          },
+        ]
         : undefined,
 
       // status untuk beda model (query pake yang di dto)
@@ -186,9 +186,9 @@ export const orderCustomerService = {
       createdAt:
         filter.startDate && filter.endDate
           ? {
-              gte: new Date(filter.startDate),
-              lte: new Date(filter.endDate + "T23:59:59.999Z"),
-            }
+            gte: new Date(filter.startDate),
+            lte: new Date(filter.endDate + "T23:59:59.999Z"),
+          }
           : undefined,
     };
 
@@ -235,7 +235,7 @@ export const orderCustomerService = {
   },
 
   async scheduledOrderPickup(customerId: string, scheduledOrderPickup: CreateOrderPickupDTO) {
-       /* ============= Cari alamat customer ================= */
+    /* ============= Cari alamat customer ================= */
 
     const findCustomer = await prisma.customer.findUnique({
       where: {
@@ -357,7 +357,7 @@ export const orderCustomerService = {
     });
   },
 
-  async confirmOrder(customerId: string, id: string){
+  async confirmOrder(customerId: string, id: string) {
     const existingOrder = await prisma.order.findUnique({
       where: {
         id: id,
@@ -370,7 +370,7 @@ export const orderCustomerService = {
       },
     });
 
-    if(!existingOrder) throw AppError("Order not found", 404)
+    if (!existingOrder) throw AppError("Order not found", 404)
 
     return await prisma.order.update({
       where: {

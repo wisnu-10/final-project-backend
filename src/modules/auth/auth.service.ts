@@ -25,6 +25,7 @@ export const authService = {
     phoneNumber,
     role,
   }: RegisterDTO) {
+    console.log("firstName");
     const existingEmailCustomer = await prisma.customer.findUnique({
       where: {
         email,
@@ -86,7 +87,7 @@ export const authService = {
     const payload = jwt.verify(token, JWT_ACCOUNT_ACTIOVATION_SECRET_KEY!) as {
       customerId: string;
     };
- 
+
     const hashedPassword = await hashing(password);
 
     await prisma.customer.update({
@@ -247,5 +248,53 @@ export const authService = {
       JWT_TOKEN_SECRET_KEY!,
       { expiresIn: "1d" },
     );
+  },
+
+  async employeeLogin({ email, password }: LoginDTO) {
+    const employee = await prisma.employee.findUnique({
+      where: { email },
+    });
+
+    if (!employee) throw AppError("Invalid email or password", 401);
+    if (employee.deletedAt) throw AppError("Account has been deactivated", 401);
+
+    const passwordMatch = await hashMatch(password, employee.password);
+    if (!passwordMatch) throw AppError("Invalid email or password", 401);
+
+    const token = jwtCreateToken(
+      {
+        employeeId: employee.id,
+        role: employee.role,
+        outletId: employee.outletId,
+      },
+      JWT_TOKEN_SECRET_KEY!,
+      { expiresIn: "1d" },
+    );
+
+    return {
+      id: employee.id,
+      email: employee.email,
+      role: employee.role,
+      outletId: employee.outletId,
+      firstName: employee.firstName,
+      token,
+    };
+  },
+
+  async employeeSession(employeeId: string) {
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+    });
+
+    if (!employee) throw AppError("Employee not found", 404);
+
+    return {
+      id: employee.id,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+      role: employee.role,
+      outletId: employee.outletId,
+    };
   },
 };
