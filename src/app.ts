@@ -2,8 +2,6 @@ import express, { Request, Response, NextFunction } from "express";
 import authRouter from "./modules/auth/auth.router";
 import authEmployeeRouter from "./modules/auth-employee/auth-employee.router";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
-dotenv.config();
 import { corsOptions } from "./config/cors.config";
 import cors from "cors";
 import passport from "./config/passport.config";
