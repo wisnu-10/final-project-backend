@@ -19,6 +19,7 @@ import laundryItemRouter from "./modules/outlet/laundry-item/laundry-item.router
 import regionRouter from "./modules/region/region.router";
 import superAdminRouter from "./modules/super-admin/super-admin.router";
 import complaintRouter from "./modules/complaint-customer/complaint-customer-router"
+import reportRouter from "./modules/report/report.router"
 import { expirySchedule } from "./helpers/jobs/expiry-schema";
 import paymentCustomerRouter from "./modules/payment-customer/payment-customer.router"
 
@@ -56,6 +57,9 @@ app.use("/laundry-items", laundryItemRouter);
 app.use("/region", regionRouter);
 app.use('/complaint', complaintRouter)
 app.use("/payments", paymentCustomerRouter);
+
+// Reports & Analytics
+app.use("/report", reportRouter);
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.log(err);
