@@ -26,6 +26,8 @@ export const paymentCustomerController = {
           payment_type,
         } = req.body;
 
+        console.log(req.body)
+
         const result = await paymentCustomerService.handleWebhook({
           order_id,
           transaction_status,

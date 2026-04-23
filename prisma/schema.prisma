@@ -247,6 +247,7 @@ model Order {
   driverDeliveryId  String? @map("driver_delivery_id") @db.Uuid
   pickupAddressId   String  @map("pickup_address_id") @db.Uuid
   deliveryAddressId String  @map("delivery_address_id") @db.Uuid
+  invoiceNumber     String?  @unique
 
   scheduleTime        DateTime  @map("schedule_time")
   distancePickup      Float     @map("distance_pickup")

@@ -19,13 +19,9 @@ export const paymentCustomerService = {
 
     if (!order) throw AppError("Order not found", 404);
 
-    
-
-    const shortOrderId = order.id.slice(0, 8).toUpperCase();
-
     const parameter = {
       transaction_details: {
-        order_id: `DL_${shortOrderId}`,
+        order_id: `${order.invoiceNumber}-${Date.now().toString().slice(-5)}`,
         gross_amount: Number(order.totalPrice),
       },
       customer_details: {
@@ -41,18 +37,21 @@ export const paymentCustomerService = {
   },
 
   async handleWebhook(payload: any) {
-    const { order_id, transaction_status, fraud_status, transaction_id, payment_type } = payload;
+    const {
+      order_id,
+      transaction_status,
+      fraud_status,
+      transaction_id,
+      payment_type,
+      gross_amount,
+    } = payload;
 
-    const orderIdParts = order_id.split("_");
-    const actualOrderId = orderIdParts[1];
-
-    if (!actualOrderId) {
+    if (!order_id) {
       throw AppError("Order id not valid", 400);
     }
 
     let mappedMethod: PaymentMethod | null = null;
 
-    // Midtrans payment_type mapping ke Enum lu
     if (payment_type === "bank_transfer" || payment_type === "echannel") {
       mappedMethod = PaymentMethod.bank_transfer;
     } else if (payment_type === "gopay" || payment_type === "shopeepay") {
@@ -81,15 +80,20 @@ export const paymentCustomerService = {
       newPaymentStatus = PaymentStatus.pending;
     }
 
+    const actualOrderId = order_id.split("-").slice(0, 3).join("-")
+
     return await prisma.payment.updateMany({
       where: {
-        orderId: actualOrderId,
+        order: {
+          invoiceNumber: actualOrderId
+        }
       },
       data: {
         status: newPaymentStatus,
         gatewayTransactionId: transaction_id,
         method: mappedMethod,
         paidAt: newPaymentStatus === PaymentStatus.paid ? new Date() : undefined,
+        amount: gross_amount
       },
     });
   }
