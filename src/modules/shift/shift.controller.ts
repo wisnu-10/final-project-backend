@@ -16,7 +16,7 @@ export const shiftController = {
     const sortOrder = (req.query.sortOrder as string) || "asc";
 
     const result = await shiftService.findAll(page, limit, search, sortBy, sortOrder);
-    res.status(200).json({ success: true, message: "Shifts retrieved successfully", ...result });
+    res.status(200).json({ success: true, message: "Shifts retrieved successfully", data: result });
   },
 
   async findById(req: Request, res: Response) {
