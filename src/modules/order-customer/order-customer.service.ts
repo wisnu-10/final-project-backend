@@ -144,38 +144,38 @@ export const orderCustomerService = {
 
       OR: filter.search
         ? [
-            {
-              outlet: {
-                name: { contains: filter.search, mode: "insensitive" },
-              },
+          {
+            outlet: {
+              name: { contains: filter.search, mode: "insensitive" },
             },
-            {
-              pickupAddress: {
-                OR: filter.search
-                  ? [
-                      {
-                        address: {
-                          contains: filter.search,
-                          mode: "insensitive",
-                        },
-                      },
-                      {
-                        districtName: {
-                          contains: filter.search,
-                          mode: "insensitive",
-                        },
-                      },
-                      {
-                        cityName: {
-                          contains: filter.search,
-                          mode: "insensitive",
-                        },
-                      },
-                    ]
-                  : undefined,
-              },
+          },
+          {
+            pickupAddress: {
+              OR: filter.search
+                ? [
+                  {
+                    address: {
+                      contains: filter.search,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
+                    districtName: {
+                      contains: filter.search,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
+                    cityName: {
+                      contains: filter.search,
+                      mode: "insensitive",
+                    },
+                  },
+                ]
+                : undefined,
             },
-          ]
+          },
+        ]
         : undefined,
 
       // status untuk beda model (query pake yang di dto)
@@ -191,9 +191,9 @@ export const orderCustomerService = {
       createdAt:
         filter.startDate && filter.endDate
           ? {
-              gte: new Date(filter.startDate),
-              lte: new Date(filter.endDate + "T23:59:59.999Z"),
-            }
+            gte: new Date(filter.startDate),
+            lte: new Date(filter.endDate + "T23:59:59.999Z"),
+          }
           : undefined,
     };
 
@@ -384,21 +384,40 @@ export const orderCustomerService = {
           },
         },
       },
-    });
-
-    if (!existingOrder) throw AppError("Order not found", 404);
-
-    return await prisma.order.update({
-      where: {
-        id: id,
-      },
-      data: {
+      include: {
         statusLogs: {
-          create: {
-            status: "completed",
-          },
+          where: { finishedAt: null },
+          take: 1,
         },
       },
+    });
+
+    if (!existingOrder) throw AppError("Order not found or not in delivering status", 404);
+
+    return await prisma.$transaction(async (tx) => {
+      // Finish active log if exists
+      if (existingOrder.statusLogs.length > 0) {
+        await tx.orderStatus.update({
+          where: { id: existingOrder.statusLogs[0].id },
+          data: { finishedAt: new Date() },
+        });
+      }
+
+      // Create completed log
+      await tx.orderStatus.create({
+        data: {
+          orderId: id,
+          status: "completed",
+          startedAt: new Date(),
+          finishedAt: new Date(),
+        },
+      });
+
+      // Update order timestamp
+      return await tx.order.update({
+        where: { id: id },
+        data: { completedDeliveryAt: new Date() },
+      });
     });
   },
 };

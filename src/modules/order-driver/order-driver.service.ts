@@ -80,7 +80,42 @@ export const orderDriverService = {
     return activeTasks;
   },
 
+  async checkActiveOrders(driverId: string) {
+    const activeOrders = await prisma.order.findMany({
+      where: {
+        OR: [
+          {
+            driverPickupId: driverId,
+            statusLogs: {
+              some: {
+                status: "on_the_way_to_outlet",
+                finishedAt: null,
+              },
+            },
+          },
+          {
+            driverDeliveryId: driverId,
+            statusLogs: {
+              some: {
+                status: "delivering",
+                finishedAt: null,
+              },
+            },
+          },
+        ],
+        deletedAt: null,
+      },
+    });
+    return activeOrders.length > 0;
+  },
+
   async acceptPickup(driverId: string, orderId: string) {
+    // Check if driver already has active orders
+    const hasActiveOrders = await this.checkActiveOrders(driverId);
+    if (hasActiveOrders) {
+      throw AppError("Anda masih memiliki pesanan aktif. Selesaikan terlebih dahulu.", 400);
+    }
+
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: { statusLogs: { orderBy: { createdAt: "desc" }, take: 1 } },
@@ -146,6 +181,12 @@ export const orderDriverService = {
   },
 
   async acceptDelivery(driverId: string, orderId: string) {
+    // Check if driver already has active orders
+    const hasActiveOrders = await this.checkActiveOrders(driverId);
+    if (hasActiveOrders) {
+      throw AppError("Anda masih memiliki pesanan aktif. Selesaikan terlebih dahulu.", 400);
+    }
+
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: { statusLogs: { orderBy: { createdAt: "desc" }, take: 1 } },
@@ -172,7 +213,9 @@ export const orderDriverService = {
 
       return await tx.order.update({
         where: { id: orderId },
-        data: { driverDeliveryId: driverId },
+        data: {
+          driverDeliveryId: driverId,
+        },
       });
     });
   },
@@ -190,16 +233,6 @@ export const orderDriverService = {
       await tx.orderStatus.update({
         where: { id: order.statusLogs[0].id },
         data: { finishedAt: new Date() },
-      });
-
-      await tx.orderStatus.create({
-        data: {
-          orderId,
-          status: "completed",
-          workerId: driverId,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-        },
       });
 
       return await tx.order.update({
@@ -225,5 +258,47 @@ export const orderDriverService = {
       orderBy: { updatedAt: "desc" },
     });
     return history;
+  },
+
+  async getAvailableOrdersForStream(outletId: string) {
+    const pickups = await prisma.order.findMany({
+      where: {
+        outletId,
+        statusLogs: {
+          some: {
+            status: "waiting_pickup",
+            finishedAt: null,
+          },
+        },
+        driverPickupId: null,
+        deletedAt: null,
+      },
+      include: {
+        customer: { select: { firstName: true, lastName: true } },
+        pickupAddress: true,
+        statusLogs: { orderBy: { createdAt: "desc" }, take: 1 },
+      },
+    });
+
+    const deliveries = await prisma.order.findMany({
+      where: {
+        outletId,
+        statusLogs: {
+          some: {
+            status: "ready_delivery",
+            finishedAt: null,
+          },
+        },
+        driverDeliveryId: null,
+        deletedAt: null,
+      },
+      include: {
+        customer: { select: { firstName: true, lastName: true } },
+        deliveryAddress: true,
+        statusLogs: { orderBy: { createdAt: "desc" }, take: 1 },
+      },
+    });
+
+    return { pickups, deliveries };
   },
 };
