@@ -3,7 +3,6 @@ import { orderAdminService } from "./order-admin.service";
 import {
   ProcessOrderDTO,
   UpdateOrderStatusDTO,
-  CreateManualOrderDTO,
 } from "../../types/order-admin.dto";
 import { OrderStatusEnum } from "../../../generated/prisma/enums";
 
@@ -76,23 +75,6 @@ export const orderAdminController = {
     });
   },
 
-  async createManualOrder(req: Request, res: Response) {
-    const { employeeId, outletId } = res.locals.payload;
-    const data = req.body as CreateManualOrderDTO;
-
-    const result = await orderAdminService.createManualOrder(
-      employeeId as string,
-      outletId as string,
-      data,
-    );
-
-    res.status(201).json({
-      success: true,
-      message: "Manual order created successfully",
-      data: result,
-    });
-  },
-
   async updateOrderStatus(req: Request, res: Response) {
     const { employeeId, outletId } = res.locals.payload;
     const { id } = req.params;
@@ -132,17 +114,6 @@ export const orderAdminController = {
     });
   },
 
-  async getCustomers(req: Request, res: Response) {
-    const { search } = req.query;
-
-    const result = await orderAdminService.getCustomers(search as string);
-
-    res.status(200).json({
-      success: true,
-      message: "Customers fetched successfully",
-      data: result,
-    });
-  },
   async getOutletInfo(req: Request, res: Response) {
     const { outletId } = res.locals.payload;
     if (!outletId) {

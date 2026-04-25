@@ -5,7 +5,6 @@ import {
   GetAllOrderAdminDTO,
   ProcessOrderDTO,
   UpdateOrderStatusDTO,
-  CreateManualOrderDTO,
 } from "../../types/order-admin.dto";
 
 // Status yang boleh di-advance oleh outlet admin (tidak termasuk completed)
@@ -373,120 +372,6 @@ export const orderAdminService = {
     return updatedOrder;
   },
 
-  async createManualOrder(
-    employeeId: string,
-    employeeOutletId: string | null,
-    data: CreateManualOrderDTO,
-  ) {
-    if (!employeeOutletId) {
-      throw AppError("You are not assigned to any outlet", 403);
-    }
-
-    // 1. Get current pricePerKg from outlet
-    const outlet = await prisma.outlet.findFirst({
-      where: { id: employeeOutletId, deletedAt: null },
-    });
-    if (!outlet) throw AppError("Outlet not found", 404);
-    const pricePerKg = Number(outlet.pricePerKg);
-
-    // 2. Validate laundry items exist
-    const laundryItemIds = data.orderItems.map((item) => item.laundryItemId);
-    const laundryItems = await prisma.laundryItem.findMany({
-      where: {
-        id: { in: laundryItemIds },
-        deletedAt: null,
-      },
-    });
-
-    // 3. Calc price
-    let totalItemPrice = 0;
-    data.orderItems.forEach((item) => {
-      const li = laundryItems.find((l) => l.id === item.laundryItemId);
-      if (li && li.pricingType === "per_item") {
-        totalItemPrice += Number(li.price) * item.quantity;
-      }
-    });
-
-    const weightPrice = data.totalWeight * pricePerKg;
-    const totalPrice = weightPrice + totalItemPrice;
-
-    // 4. Get Customer Primary Address (Required by DB Schema)
-    const customerAddress = await prisma.customerAddress.findFirst({
-      where: {
-        customerId: data.customerId,
-        deletedAt: null,
-      },
-      orderBy: { isPrimary: "desc" }, // Get primary first
-    });
-
-    if (!customerAddress) {
-      throw AppError(
-        "This customer has no registered address. Please add an address to the customer profile first.",
-        400,
-      );
-    }
-
-    // 5. Create Transaction
-    const newOrder = await prisma.$transaction(async (tx) => {
-      // Create Order
-      const order = await tx.order.create({
-        data: {
-          customerId: data.customerId,
-          outletId: employeeOutletId,
-          adminId: employeeId,
-          pricePerKg: pricePerKg,
-          totalWeight: data.totalWeight,
-          totalPrice: totalPrice,
-          pickupAddressId: customerAddress.id,
-          deliveryAddressId: customerAddress.id,
-          scheduleTime: new Date(),
-          distancePickup: 0,
-          distanceDelivery: 0,
-        },
-      });
-
-      // Create Order Items
-      const orderItemsData = data.orderItems.map((item) => {
-        const li = laundryItems.find((l) => l.id === item.laundryItemId);
-        let subTotal = 0;
-        if (li && li.pricingType === "per_item") {
-          subTotal = Number(li.price) * item.quantity;
-        }
-        return {
-          orderId: order.id,
-          laundryItemId: item.laundryItemId,
-          quantity: item.quantity,
-          subTotal,
-        };
-      });
-
-      await tx.orderItem.createMany({ data: orderItemsData });
-
-      // Create Status Log
-      await tx.orderStatus.create({
-        data: {
-          orderId: order.id,
-          status: "washing",
-          workerId: data.workerId,
-          startedAt: new Date(),
-        },
-      });
-
-      // Create Payment Record (Pending)
-      await tx.payment.create({
-        data: {
-          orderId: order.id,
-          amount: totalPrice,
-          status: "pending",
-        },
-      });
-
-      return order;
-    });
-
-    return newOrder;
-  },
-
   async updateOrderStatus(
     employeeId: string,
     employeeOutletId: string | null,
@@ -571,22 +456,6 @@ export const orderAdminService = {
     });
   },
 
-  async getCustomers(search?: string) {
-    return prisma.customer.findMany({
-      where: {
-        deletedAt: null,
-        OR: search
-          ? [
-              { firstName: { contains: search, mode: "insensitive" } },
-              { lastName: { contains: search, mode: "insensitive" } },
-              { email: { contains: search, mode: "insensitive" } },
-            ]
-          : undefined,
-      },
-      select: { id: true, firstName: true, lastName: true, email: true },
-      take: 20,
-    });
-  },
   async getOutletInfo(outletId: string) {
     const outlet = await prisma.outlet.findUnique({
       where: { id: outletId as any, deletedAt: null },

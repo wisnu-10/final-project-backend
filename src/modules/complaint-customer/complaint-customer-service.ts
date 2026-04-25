@@ -114,6 +114,7 @@ export const complaintCustomerService = {
           order: {
             select: { 
               id: true, 
+              invoiceNumber: true,
               outletId: true,
               outlet: {
                 select: { name: true }

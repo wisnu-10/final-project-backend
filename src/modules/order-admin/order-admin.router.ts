@@ -7,7 +7,6 @@ import {
 import { JWT_TOKEN_SECRET_KEY } from "../../config/main.config";
 import { processOrderValidator } from "./validators/process-order.validator";
 import { updateStatusValidator } from "./validators/update-status.validator";
-import { createManualOrderValidator } from "./validators/create-manual-order.validator";
 import { expressRequestValidation } from "../../middlewares/express-request-validation.middleware";
 
 const router = Router();
@@ -19,23 +18,11 @@ router.use(employeeRoleVerify(["super_admin", "outlet_admin"]));
 // List all orders (role-based filtering handled in service)
 router.get("/", orderAdminController.getAllOrders);
 
-// Search customers (for manual order form)
-router.get("/customers", orderAdminController.getCustomers);
-
 // Get workers for this outlet (for worker assignment dropdown)
 router.get("/workers", orderAdminController.getOutletWorkers);
 
 // Get outlet info (price per kg, etc.)
 router.get("/outlet-info", orderAdminController.getOutletInfo);
-
-// Create manual order (walk-in)
-router.post(
-  "/create-manual",
-  employeeRoleVerify(["outlet_admin"]),
-  createManualOrderValidator,
-  expressRequestValidation,
-  orderAdminController.createManualOrder,
-);
 
 // Get single order detail
 router.get("/:id", orderAdminController.getOrderById);
