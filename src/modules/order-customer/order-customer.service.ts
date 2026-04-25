@@ -107,8 +107,13 @@ export const orderCustomerService = {
       );
     }
 
+    const timestamp = Date.now().toString().slice(-5);
+    const customerPart = findCustomer.id.slice(0, 5).toUpperCase();
+    const invoiceNumber = `DL-${customerPart}-${timestamp}`;
+
     return await prisma.order.create({
       data: {
+        invoiceNumber: invoiceNumber,
         customerId,
         pickupAddressId: createOrderPickup.pickupAddressId,
         deliveryAddressId: createOrderPickup.deliveryAddressId,
@@ -199,15 +204,17 @@ export const orderCustomerService = {
         take: filter.limit,
         orderBy: { createdAt: "desc" }, // Biasanya user mau liat yang terbaru dulu
         include: {
+          customer: true,
           pickupAddress: {
             select: { address: true, districtName: true, cityName: true },
           },
           deliveryAddress: {
             select: { address: true, districtName: true, cityName: true },
           },
-          outlet: { select: { name: true } },
-          statusLogs: { select: { status: true } },
-          payments: { select: { status: true } },
+          outlet: true,
+          statusLogs: true,
+          payments: true,
+          orderItems: { include: { laundryItem: true } },
         },
       }),
       prisma.order.count({ where: whereClause }),
@@ -230,11 +237,15 @@ export const orderCustomerService = {
         outlet: true,
         statusLogs: { select: { status: true } },
         payments: { select: { status: true } },
+        orderItems: { include: { laundryItem: true } },
       },
     });
   },
 
-  async scheduledOrderPickup(customerId: string, scheduledOrderPickup: CreateOrderPickupDTO) {
+  async scheduledOrderPickup(
+    customerId: string,
+    scheduledOrderPickup: CreateOrderPickupDTO,
+  ) {
     /* ============= Cari alamat customer ================= */
 
     const findCustomer = await prisma.customer.findUnique({
@@ -333,8 +344,13 @@ export const orderCustomerService = {
     /* ============= set Waktu biar 1 hari =============== */
     const userPickTime = new Date(scheduledOrderPickup.scheduleTime);
 
+    const timestamp = Date.now().toString().slice(-5);
+    const customerPart = findCustomer.id.slice(0, 5).toUpperCase();
+    const invoiceNumber = `DL-${customerPart}-${timestamp}`;
+
     return await prisma.order.create({
       data: {
+        invoiceNumber: invoiceNumber,
         customerId,
         pickupAddressId: scheduledOrderPickup.pickupAddressId,
         deliveryAddressId: scheduledOrderPickup.deliveryAddressId,

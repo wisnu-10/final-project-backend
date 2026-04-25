@@ -70,8 +70,12 @@ export const attendanceController = {
     const employeeId = req.params.employeeId as string;
     const q = parseReportQuery(req.query);
 
+    // sortBy for attendance must be an Attendance field, not Employee field
+    const validAttendanceSortFields = ["date", "status", "checkIn", "checkOut", "createdAt"];
+    const sortBy = validAttendanceSortFields.includes(q.sortBy) ? q.sortBy : "date";
+
     const result = await attendanceReportService.getEmployeeReport(
-      outletId, employeeId, q.page, q.limit, q.startDate, q.endDate, q.status, q.sortBy, q.sortOrder,
+      outletId, employeeId, q.page, q.limit, q.startDate, q.endDate, q.status, sortBy, q.sortOrder,
     );
     res.status(200).json({ success: true, message: "Employee attendance report retrieved", data: result });
   },
