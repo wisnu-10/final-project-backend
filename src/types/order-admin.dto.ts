@@ -22,13 +22,6 @@ export interface ProcessOrderDTO {
   workerId: string;
 }
 
-export interface CreateManualOrderDTO {
-  customerId: string;
-  totalWeight: number;
-  orderItems: OrderItemInput[];
-  workerId: string;
-}
-
 export interface UpdateOrderStatusDTO {
   status: OrderStatusEnum;
   workerId: string;
