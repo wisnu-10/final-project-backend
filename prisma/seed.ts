@@ -1,6 +1,7 @@
-import {prisma} from "../src/config/prisma-client.config"
+import { prisma } from "../src/config/prisma-client.config"
 import { seedOutlets } from "./seeds/outlet.seed";
 import { seedBypassRequests } from "./seeds/bypass-request";
+import { seedDriverOrders } from "./seeds/driver-orders.seed";
 
 async function main() {
   try {
@@ -8,7 +9,10 @@ async function main() {
 
     // Panggil fungsi seed outlet di sini
     await seedOutlets(prisma);
-    
+
+    // Seed Driver Orders
+    await seedDriverOrders(prisma);
+
     // Seed Bypass Requests
     await seedBypassRequests(prisma);
 
