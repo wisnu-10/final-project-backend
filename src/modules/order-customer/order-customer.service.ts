@@ -202,7 +202,7 @@ export const orderCustomerService = {
         where: whereClause,
         skip: skip,
         take: filter.limit,
-        orderBy: { createdAt: "desc" }, // Biasanya user mau liat yang terbaru dulu
+        orderBy: { createdAt: "desc" }, 
         include: {
           customer: true,
           pickupAddress: {
@@ -215,6 +215,7 @@ export const orderCustomerService = {
           statusLogs: true,
           payments: true,
           orderItems: { include: { laundryItem: true } },
+          complaints: true
         },
       }),
       prisma.order.count({ where: whereClause }),
@@ -238,6 +239,7 @@ export const orderCustomerService = {
         statusLogs: { select: { status: true } },
         payments: { select: { status: true } },
         orderItems: { include: { laundryItem: true } },
+        complaints: {include: {resolvedBy: true}},
       },
     });
   },

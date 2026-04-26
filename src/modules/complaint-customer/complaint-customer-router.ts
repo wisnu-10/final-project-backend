@@ -29,7 +29,7 @@ router.patch(
 router.get(
   "/:id",
   jwtVerifyEmployee(JWT_TOKEN_SECRET_KEY!),
-  employeeRoleVerify(["super_admin", "outlet_admin"]),
+  employeeRoleVerify(["super_admin", "outlet_admin","customer"]),
   complaintCustomerController.getComplaintById,
 );
 
