@@ -26,8 +26,6 @@ export const paymentCustomerController = {
           payment_type,
         } = req.body;
 
-        console.log(req.body)
-
         const result = await paymentCustomerService.handleWebhook({
           order_id,
           transaction_status,
@@ -41,5 +39,19 @@ export const paymentCustomerController = {
             message: "Webhook received",
             data: result
         })
+    },
+
+    async emailInvoice(req: Request, res: Response){
+      const {orderId} = req.params
+
+      const result = await paymentCustomerService.emailInvoice(orderId as string)
+
+      res.status(200).json({
+        success: true,
+        message: "Invoice has already seended",
+        data: result
+      })
     }
+
+
 }

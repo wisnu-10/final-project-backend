@@ -1,7 +1,11 @@
+import path from "node:path";
 import { PaymentMethod, PaymentStatus } from "../../../generated/prisma/enums";
 import { snap } from "../../config/midtrans.config";
 import { prisma } from "../../config/prisma-client.config";
 import AppError from "../../helpers/app-error.helper";
+import fs from "fs";
+import transporter from "../../helpers/nodemailer.helper";
+import Handlebars from "handlebars";
 
 export const paymentCustomerService = {
   async createPayment(orderId: string) {
@@ -10,30 +14,71 @@ export const paymentCustomerService = {
         id: orderId,
       },
       include: {
-        customer: {
-          select: { firstName: true, lastName: true, email: true },
-        },
-        orderItems: { include: {laundryItem: true}},
+        customer: true,
+        orderItems: { include: { laundryItem: true } },
+        outlet: true,
+        pickupAddress: true
       },
     });
 
     if (!order) throw AppError("Order not found", 404);
 
-    const parameter = {
-      transaction_details: {
-        order_id: `${order.invoiceNumber}-${Date.now().toString().slice(-5)}`,
-        gross_amount: Number(order.totalPrice),
-      },
-      customer_details: {
-        first_name: order.customer.firstName,
-        last_name: order.customer.lastName,
-        email: order.customer.email,
-      },
-    };
+const allItems = [];
+let calculatedGrossAmount = 0;
 
+order.orderItems.forEach((item) => {
+  if (item.laundryItem.pricingType === "per_item") {
+    const unitPrice = Number(item.laundryItem.price);
+    const qty = item.quantity;
+    const itemTotal = unitPrice * qty;
+
+    allItems.push({
+      id: item.laundryItem.id,
+      price: unitPrice, 
+      quantity: qty, 
+      name: `${item.laundryItem.name.substring(0, 30)} (${qty} x ${unitPrice.toLocaleString("id-ID")})`,
+    });
+
+    calculatedGrossAmount += itemTotal;
+  }
+});
+
+if (Number(order.totalWeight) > 0) {
+  const priceKg = Number(order.pricePerKg);
+  const weight = Number(order.totalWeight);
+  const kiloanTotal = priceKg * weight;
+
+  allItems.push({
+    price: priceKg,
+    quantity: weight,
+    
+    name: `Basic Wash (${weight}kg x ${priceKg.toLocaleString("id-ID")})`,
+  });
+
+  calculatedGrossAmount += kiloanTotal;
+}
+
+const parameter = {
+  transaction_details: {
+    order_id: `${order.invoiceNumber}-${Date.now().toString().slice(-5)}`,
+    gross_amount: calculatedGrossAmount,
+  },
+  item_details: allItems,
+  customer_details: {
+    first_name: order.customer.firstName,
+    last_name: order.customer.lastName,
+    email: order.customer.email,
+    phone: order.customer.phoneNumber, 
+    billing_address: {
+      address: order.pickupAddress.address,
+      city: order.pickupAddress.cityName,
+      postal_code: order.pickupAddress.postalCode, 
+    },
+  },
+};
     const transaction = await snap.createTransaction(parameter);
 
-    return transaction
+    return transaction;
   },
 
   async handleWebhook(payload: any) {
@@ -80,21 +125,93 @@ export const paymentCustomerService = {
       newPaymentStatus = PaymentStatus.pending;
     }
 
-    const actualOrderId = order_id.split("-").slice(0, 3).join("-")
+    const actualOrderId = order_id.split("-").slice(0, 3).join("-");
 
     return await prisma.payment.updateMany({
       where: {
         order: {
-          invoiceNumber: actualOrderId
-        }
+          invoiceNumber: actualOrderId,
+        },
       },
       data: {
         status: newPaymentStatus,
         gatewayTransactionId: transaction_id,
         method: mappedMethod,
-        paidAt: newPaymentStatus === PaymentStatus.paid ? new Date() : undefined,
-        amount: gross_amount
+        paidAt:
+          newPaymentStatus === PaymentStatus.paid ? new Date() : undefined,
+        amount: gross_amount,
       },
     });
-  }
+  },
+
+  async emailInvoice(orderId: string) {
+    const existingOrder = await prisma.order.findFirst({
+      where: {
+        id: orderId,
+      },
+      include: {
+        outlet: true,
+        payments: { select: { status: true } },
+        orderItems: { include: { laundryItem: true } },
+        customer: true,
+      },
+    });
+
+    if (!existingOrder) throw AppError("Order not found", 404);
+
+    const kiloan = existingOrder.orderItems
+      .filter((items: any) => items.laundryItem.pricingType === "kiloan")
+      .map((items: any) => ({
+        name: "Basic Wash",
+        detail: `${existingOrder.totalWeight} kg x Rp. ${Number(existingOrder.pricePerKg).toLocaleString("id-ID")}`,
+        subTotal: (
+          Number(existingOrder.totalWeight) * Number(existingOrder.pricePerKg)
+        ).toLocaleString("id-ID"),
+      }));
+
+    const perItems = existingOrder.orderItems
+      .filter((items: any) => items.laundryItem.pricingType === "per_item")
+      .map((items: any) => ({
+        name: items.laundryItem.name,
+        detail: `${items.quantity} kg x Rp. ${Number(items.laundryItem.price)}`,
+        subTotal: Number(items.subTotal).toLocaleString("id-ID")
+      }));
+
+    const templateDir = path.resolve(__dirname, "../../templates");
+
+    const templatePath = path.join(templateDir, "invoice-templates.html");
+
+    const templateSource = fs.readFileSync(templatePath, "utf-8");
+
+    const compiledTemplate = Handlebars.compile(templateSource);
+
+    const html = compiledTemplate({
+      firstName: existingOrder.customer.firstName,
+      lastName: existingOrder.customer.lastName,
+      customerPhone: existingOrder.customer.phoneNumber,
+      invoiceNumber: existingOrder.invoiceNumber,
+      orderDate: new Date(existingOrder.createdAt).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+      paymentStatus:
+        existingOrder.payments[existingOrder.payments.length - 1].status,
+      outletName: existingOrder.outlet.name,
+      outletAddress: existingOrder.outlet.address,
+      outletCity: existingOrder.outlet.cityName,
+      outletProvince: existingOrder.outlet.provinceName,
+      hasKiloan: kiloan.length > 0,
+      kiloan: kiloan,
+      hasPerItem: perItems.length > 0,
+      perItems: perItems,
+      totalPrice: Number(existingOrder.totalPrice).toLocaleString("id-ID"),
+    });
+
+    await transporter.sendMail({
+      to: existingOrder.customer.email,
+      subject: `Payment Invoice ${existingOrder.invoiceNumber} - diLaundryin`,
+      html: html,
+    });
+  },
 };

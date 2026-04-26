@@ -14,4 +14,6 @@ router.post(
 
 router.post("/webhook", paymentCustomerController.handleWebhook);
 
+router.post("/email-invoice/:orderId", paymentCustomerController.emailInvoice)
+
 export default router

@@ -25,7 +25,6 @@ export const authService = {
     phoneNumber,
     role,
   }: RegisterDTO) {
-    console.log("firstName");
     const existingEmailCustomer = await prisma.customer.findUnique({
       where: {
         email,
