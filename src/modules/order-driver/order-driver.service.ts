@@ -113,7 +113,10 @@ export const orderDriverService = {
     // Check if driver already has active orders
     const hasActiveOrders = await this.checkActiveOrders(driverId);
     if (hasActiveOrders) {
-      throw AppError("Anda masih memiliki pesanan aktif. Selesaikan terlebih dahulu.", 400);
+      throw AppError(
+        "Anda masih memiliki pesanan aktif. Selesaikan terlebih dahulu.",
+        400,
+      );
     }
 
     const order = await prisma.order.findUnique({
@@ -122,8 +125,10 @@ export const orderDriverService = {
     });
 
     if (!order) throw AppError("Order not found", 404);
-    if (order.driverPickupId) throw AppError("Order already has a driver for pickup", 400);
-    if (order.statusLogs[0]?.status !== "waiting_pickup") throw AppError("Order is not waiting for pickup", 400);
+    if (order.driverPickupId)
+      throw AppError("Order already has a driver for pickup", 400);
+    if (order.statusLogs[0]?.status !== "waiting_pickup")
+      throw AppError("Order is not waiting for pickup", 400);
 
     return await prisma.$transaction(async (tx) => {
       // Finish current log
@@ -155,8 +160,10 @@ export const orderDriverService = {
       include: { statusLogs: { orderBy: { createdAt: "desc" }, take: 1 } },
     });
 
-    if (!order || order.driverPickupId !== driverId) throw AppError("Task not assigned to you", 403);
-    if (order.statusLogs[0]?.status !== "on_the_way_to_outlet") throw AppError("Invalid status flow", 400);
+    if (!order || order.driverPickupId !== driverId)
+      throw AppError("Task not assigned to you", 403);
+    if (order.statusLogs[0]?.status !== "on_the_way_to_outlet")
+      throw AppError("Invalid status flow", 400);
 
     return await prisma.$transaction(async (tx) => {
       await tx.orderStatus.update({
@@ -184,7 +191,10 @@ export const orderDriverService = {
     // Check if driver already has active orders
     const hasActiveOrders = await this.checkActiveOrders(driverId);
     if (hasActiveOrders) {
-      throw AppError("Anda masih memiliki pesanan aktif. Selesaikan terlebih dahulu.", 400);
+      throw AppError(
+        "Anda masih memiliki pesanan aktif. Selesaikan terlebih dahulu.",
+        400,
+      );
     }
 
     const order = await prisma.order.findUnique({
@@ -193,12 +203,16 @@ export const orderDriverService = {
     });
 
     if (!order) throw AppError("Order not found", 404);
-    if (order.driverDeliveryId) throw AppError("Order already has a driver for delivery", 400);
-    if (order.statusLogs[0]?.status !== "ready_delivery") throw AppError("Order is not ready for delivery", 400);
+    if (order.driverDeliveryId)
+      throw AppError("Order already has a driver for delivery", 400);
+    if (
+      order.statusLogs[order.statusLogs.length - 1]?.status !== "ready_delivery"
+    )
+      throw AppError("Order is not ready for delivery", 400);
 
     return await prisma.$transaction(async (tx) => {
       await tx.orderStatus.update({
-        where: { id: order.statusLogs[0].id },
+        where: { id: order.statusLogs[order.statusLogs.length - 1]?.id },
         data: { finishedAt: new Date() },
       });
 
@@ -226,13 +240,24 @@ export const orderDriverService = {
       include: { statusLogs: { orderBy: { createdAt: "desc" }, take: 1 } },
     });
 
-    if (!order || order.driverDeliveryId !== driverId) throw AppError("Task not assigned to you", 403);
-    if (order.statusLogs[0]?.status !== "delivering") throw AppError("Invalid status flow", 400);
-
+    if (!order || order.driverDeliveryId !== driverId)
+      throw AppError("Task not assigned to you", 403);
+    if (order.statusLogs[order.statusLogs.length - 1]?.status !== "delivering")
+      throw AppError("Invalid status flow", 400);
+    console.log(order.statusLogs[order.statusLogs.length - 1]);
     return await prisma.$transaction(async (tx) => {
       await tx.orderStatus.update({
-        where: { id: order.statusLogs[0].id },
+        where: { id: order.statusLogs[order.statusLogs.length - 1]?.id },
         data: { finishedAt: new Date() },
+      });
+
+      await tx.orderStatus.create({
+        data: {
+          orderId,
+          status: "delivering",
+          workerId: driverId,
+          startedAt: new Date(),
+        },
       });
 
       return await tx.order.update({
@@ -252,7 +277,22 @@ export const orderDriverService = {
         deletedAt: null,
       },
       include: {
-        customer: { select: { firstName: true, lastName: true } },
+        customer: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            phoneNumber: true,
+          },
+        },
+        outlet: {
+          select: {
+            name: true,
+            address: true,
+          },
+        },
+        pickupAddress: true,
+        deliveryAddress: true,
         statusLogs: { orderBy: { createdAt: "desc" } },
       },
       orderBy: { updatedAt: "desc" },
