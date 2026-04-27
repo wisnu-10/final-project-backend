@@ -237,7 +237,7 @@ export const orderCustomerService = {
         deliveryAddress: true,
         outlet: true,
         statusLogs: { select: { status: true } },
-        payments: { select: { status: true } },
+        payments: true,
         orderItems: { include: { laundryItem: true } },
         complaints: {include: {resolvedBy: true}},
       },
