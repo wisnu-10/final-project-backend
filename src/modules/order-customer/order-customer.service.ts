@@ -76,10 +76,7 @@ export const orderCustomerService = {
     const nearestOutlet = pickupOutletDistances[0];
 
     if (nearestOutlet.distance > nearestOutlet.maxServiceDistance) {
-      throw AppError(
-        `The nearest outlet is too far from the pickup address. Distance: ${nearestOutlet.distance} km, Max Service Distance: ${nearestOutlet.maxServiceDistance} km`,
-        400,
-      );
+      throw AppError("The nearest outlet is too far from the address", 400);
     }
 
     /* ============= Cari Outlet terdekat (dari jarak/distance) berdasarkan alamat delivery ================= */
@@ -101,10 +98,7 @@ export const orderCustomerService = {
     if (
       nearestDeliveryOutlet.distance > nearestDeliveryOutlet.maxServiceDistance
     ) {
-      throw AppError(
-        `The nearest outlet is too far from the delivery address. Distance: ${nearestDeliveryOutlet.distance} km, Max Service Distance: ${nearestDeliveryOutlet.maxServiceDistance} km`,
-        400,
-      );
+      throw AppError("The nearest outlet is too far from the address", 400);
     }
 
     const timestamp = Date.now().toString().slice(-5);
@@ -237,7 +231,7 @@ export const orderCustomerService = {
         deliveryAddress: true,
         outlet: true,
         statusLogs: { select: { status: true } },
-        payments: { select: { status: true } },
+        payments: true,
         orderItems: { include: { laundryItem: true } },
         complaints: {include: {resolvedBy: true}},
       },
@@ -313,7 +307,7 @@ export const orderCustomerService = {
 
     if (nearestOutlet.distance > nearestOutlet.maxServiceDistance) {
       throw AppError(
-        `The nearest outlet is too far from the pickup address. Distance: ${nearestOutlet.distance} km, Max Service Distance: ${nearestOutlet.maxServiceDistance} km`,
+        "The nearest outlet is too far from the address",
         400,
       );
     }
@@ -338,7 +332,7 @@ export const orderCustomerService = {
       nearestDeliveryOutlet.distance > nearestDeliveryOutlet.maxServiceDistance
     ) {
       throw AppError(
-        `The nearest outlet is too far from the delivery address. Distance: ${nearestDeliveryOutlet.distance} km, Max Service Distance: ${nearestDeliveryOutlet.maxServiceDistance} km`,
+        "The nearest outlet is too far from the address",
         400,
       );
     }
