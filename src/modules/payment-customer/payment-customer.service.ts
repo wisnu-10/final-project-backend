@@ -17,65 +17,65 @@ export const paymentCustomerService = {
         customer: true,
         orderItems: { include: { laundryItem: true } },
         outlet: true,
-        pickupAddress: true
+        pickupAddress: true,
       },
     });
 
     if (!order) throw AppError("Order not found", 404);
 
-const allItems = [];
-let calculatedGrossAmount = 0;
+    const allItems = [];
+    let calculatedGrossAmount = 0;
 
-order.orderItems.forEach((item) => {
-  if (item.laundryItem.pricingType === "per_item") {
-    const unitPrice = Number(item.laundryItem.price);
-    const qty = item.quantity;
-    const itemTotal = unitPrice * qty;
+    order.orderItems.forEach((item) => {
+      if (item.laundryItem.pricingType === "per_item") {
+        const unitPrice = Number(item.laundryItem.price);
+        const qty = item.quantity;
+        const itemTotal = unitPrice * qty;
 
-    allItems.push({
-      id: item.laundryItem.id,
-      price: unitPrice, 
-      quantity: qty, 
-      name: `${item.laundryItem.name.substring(0, 30)} (${qty} x ${unitPrice.toLocaleString("id-ID")})`,
+        allItems.push({
+          id: item.laundryItem.id,
+          price: unitPrice,
+          quantity: qty,
+          name: `${item.laundryItem.name.substring(0, 30)} (${qty} x ${unitPrice.toLocaleString("id-ID")})`,
+        });
+
+        calculatedGrossAmount += itemTotal;
+      }
     });
 
-    calculatedGrossAmount += itemTotal;
-  }
-});
+    if (Number(order.totalWeight) > 0) {
+      const priceKg = Number(order.pricePerKg);
+      const weight = Number(order.totalWeight);
+      const kiloanTotal = priceKg * weight;
 
-if (Number(order.totalWeight) > 0) {
-  const priceKg = Number(order.pricePerKg);
-  const weight = Number(order.totalWeight);
-  const kiloanTotal = priceKg * weight;
+      allItems.push({
+        price: priceKg,
+        quantity: weight,
 
-  allItems.push({
-    price: priceKg,
-    quantity: weight,
-    
-    name: `Basic Wash (${weight}kg x ${priceKg.toLocaleString("id-ID")})`,
-  });
+        name: `Basic Wash (${weight}kg x ${priceKg.toLocaleString("id-ID")})`,
+      });
 
-  calculatedGrossAmount += kiloanTotal;
-}
+      calculatedGrossAmount += kiloanTotal;
+    }
 
-const parameter = {
-  transaction_details: {
-    order_id: `${order.invoiceNumber}-${Date.now().toString().slice(-5)}`,
-    gross_amount: calculatedGrossAmount,
-  },
-  item_details: allItems,
-  customer_details: {
-    first_name: order.customer.firstName,
-    last_name: order.customer.lastName,
-    email: order.customer.email,
-    phone: order.customer.phoneNumber, 
-    billing_address: {
-      address: order.pickupAddress.address,
-      city: order.pickupAddress.cityName,
-      postal_code: order.pickupAddress.postalCode, 
-    },
-  },
-};
+    const parameter = {
+      transaction_details: {
+        order_id: `${order.invoiceNumber}-${Date.now().toString().slice(-5)}`,
+        gross_amount: calculatedGrossAmount,
+      },
+      item_details: allItems,
+      customer_details: {
+        first_name: order.customer.firstName,
+        last_name: order.customer.lastName,
+        email: order.customer.email,
+        phone: order.customer.phoneNumber,
+        billing_address: {
+          address: order.pickupAddress.address,
+          city: order.pickupAddress.cityName,
+          postal_code: order.pickupAddress.postalCode,
+        },
+      },
+    };
     const transaction = await snap.createTransaction(parameter);
 
     return transaction;
@@ -127,20 +127,40 @@ const parameter = {
 
     const actualOrderId = order_id.split("-").slice(0, 3).join("-");
 
-    return await prisma.payment.updateMany({
-      where: {
-        order: {
-          invoiceNumber: actualOrderId,
+    const orderStatus = await prisma.order.findFirst({
+      where: { invoiceNumber: actualOrderId },
+      include: { statusLogs: {
+        orderBy: { createdAt: 'asc' },
+        select: {status: true}} },
+    });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.updateMany({
+        where: {
+          order: {
+            invoiceNumber: actualOrderId,
+          },
         },
-      },
-      data: {
-        status: newPaymentStatus,
-        gatewayTransactionId: transaction_id,
-        method: mappedMethod,
-        paidAt:
-          newPaymentStatus === PaymentStatus.paid ? new Date() : undefined,
-        amount: gross_amount,
-      },
+        data: {
+          status: newPaymentStatus,
+          gatewayTransactionId: transaction_id,
+          method: mappedMethod,
+          paidAt:
+            newPaymentStatus === PaymentStatus.paid ? new Date() : undefined,
+          amount: gross_amount,
+        },
+      });
+
+      if (
+        orderStatus?.statusLogs[orderStatus?.statusLogs?.length - 1]?.status ===
+          "waiting_payment" &&
+        newPaymentStatus === PaymentStatus.paid
+      ) {
+        await tx.order.update({
+          where: { invoiceNumber: actualOrderId },
+          data: { statusLogs: { create: { status: "ready_delivery" } } },
+        });
+      }
     });
   },
 
@@ -174,7 +194,7 @@ const parameter = {
       .map((items: any) => ({
         name: items.laundryItem.name,
         detail: `${items.quantity} kg x Rp. ${Number(items.laundryItem.price)}`,
-        subTotal: Number(items.subTotal).toLocaleString("id-ID")
+        subTotal: Number(items.subTotal).toLocaleString("id-ID"),
       }));
 
     const templateDir = path.resolve(__dirname, "../../templates");

@@ -263,6 +263,10 @@ export const addressCustomerService = {
         customerId: customerId,
         deletedAt: null,
       },
+      orderBy: [
+        { isPrimary: "desc" },
+        { createdAt: "desc" },
+      ],
       select: {
         id: true,
         recipientName: true,
