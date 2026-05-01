@@ -43,22 +43,22 @@ app.use("/api/attendance", attendanceRouter);
 app.use("/api/shifts", shiftRouter);
 
 // Core Business Logic
-app.use("/order", orderCustomerRouter);
+app.use("/api/worker-tasks", orderWorkerRouter);
 app.use("/order-admin", orderAdminRouter);
-app.use("/order-worker", orderWorkerRouter);
 app.use("/order-driver", orderDriverRouter);
+app.use("/order", orderCustomerRouter);
 app.use("/bypass-request", bypassRequestRouter);
 
 // Master Data & Regions
 app.use("/address", addressCustomerRouter);
-app.use("/super-admin", superAdminRouter);
 app.use("/super-admin/outlets", outletRouter);
+app.use("/super-admin", superAdminRouter);
 app.use("/laundry-items", laundryItemRouter);
 app.use("/region", regionRouter);
 app.use('/complaint', complaintRouter)
 app.use("/payments", paymentCustomerRouter);
 
-// Reports & Analytics
+// Reports & Analytics`
 app.use("/report", reportRouter);
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
