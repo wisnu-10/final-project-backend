@@ -1,421 +1,222 @@
+import { OrderStatusEnum } from "../../../generated/prisma/enums";
 import { prisma } from "../../config/prisma-client.config";
 import AppError from "../../helpers/app-error.helper";
-import { calcPagination } from "../../helpers/pagination.helper";
 
-// ─── Attendance Helpers ──────────────────────────────────
-const LATE_HOUR = 8;
-
-function getTodayDate(): Date {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-}
-
-function determineStatus(): "present" | "late" {
-  return new Date().getHours() < LATE_HOUR ? "present" : "late";
-}
-
-function buildDateFilter(month?: number, year?: number) {
-  if (month && year) {
-    return { gte: new Date(year, month - 1, 1), lte: new Date(year, month, 0) };
-  }
-  if (year) {
-    return { gte: new Date(year, 0, 1), lte: new Date(year, 11, 31) };
-  }
-  return undefined;
-}
-
-function buildDateRangeFilter(startDate?: string, endDate?: string) {
-  if (!startDate && !endDate) return undefined;
-  const filter: any = {};
-  if (startDate) filter.gte = new Date(startDate);
-  if (endDate) filter.lte = new Date(endDate);
-  return filter;
-}
-
-const INCLUDE_EMPLOYEE = {
-  shift: true,
-  employee: { select: { firstName: true, lastName: true, role: true } },
-};
+// Worker-processable stations (order they work on at their station)
+const WORKER_STATIONS: OrderStatusEnum[] = ["washing", "ironing", "packing"];
 
 export const orderWorkerService = {
   /**
-   * Get orders assigned to a specific worker (limited view)
-   * Only returns: orderId, customer name, current station, bypass status
+   * Get all orders available for a worker at their outlet
+   * These are orders at arrived_outlet/washing/ironing/packing with NO worker assigned
    */
-  async getWorkerOrders(workerId: string, workerOutletId: string | null) {
-    if (!workerOutletId) {
-      throw AppError("You are not assigned to any outlet", 403);
-    }
+  async getAvailableTasks(workerOutletId: string) {
+    if (!workerOutletId) throw AppError("You are not assigned to any outlet", 403);
 
-    // Find orders where this worker is assigned in any status log
-    const orders = await prisma.order.findMany({
+    return prisma.order.findMany({
       where: {
         outletId: workerOutletId,
         deletedAt: null,
         statusLogs: {
           some: {
-            workerId,
+            status: { in: ["arrived_outlet", "washing", "ironing", "packing"] },
+            finishedAt: null,
+            workerId: null,
           },
         },
       },
-      select: {
-        id: true,
-        customer: {
-          select: { firstName: true, lastName: true },
-        },
-        statusLogs: {
-          select: {
-            status: true,
-            workerId: true,
-            createdAt: true,
-          },
-          orderBy: { createdAt: "desc" },
-          take: 1,
-        },
-        bypassRequests: {
-          where: {
-            deletedAt: null,
-            status: "waiting",
-          },
-          select: {
-            id: true,
-            status: true,
-            station: true,
-          },
-        },
-        createdAt: true,
+      include: {
+        customer: { select: { firstName: true, lastName: true } },
+        orderItems: { include: { laundryItem: true } },
+        statusLogs: { orderBy: { createdAt: "desc" }, take: 1 },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "asc" },
     });
-
-    // Map to simplified format
-    return orders.map((order) => ({
-      orderId: order.id,
-      customerName: `${order.customer.firstName || ""} ${order.customer.lastName || ""}`.trim(),
-      currentStation: order.statusLogs[0]?.status || "unknown",
-      hasPendingBypass: order.bypassRequests.length > 0,
-      createdAt: order.createdAt,
-    }));
   },
 
   /**
-   * Get limited order detail for worker:
-   * - Customer name, Order ID
-   * - Laundry items with expected quantities
-   * - Bypass request status
+   * Get active tasks assigned to this specific worker
    */
-  async getWorkerOrderDetail(
-    workerId: string,
-    workerOutletId: string | null,
-    orderId: string,
-  ) {
-    if (!workerOutletId) {
-      throw AppError("You are not assigned to any outlet", 403);
-    }
-
-    const order = await prisma.order.findFirst({
+  async getMyTasks(workerId: string) {
+    return prisma.order.findMany({
       where: {
-        id: orderId,
-        outletId: workerOutletId,
         deletedAt: null,
         statusLogs: {
           some: {
             workerId,
+            finishedAt: null,
+            status: { in: ["arrived_outlet", "washing", "ironing", "packing"] },
           },
         },
       },
-      select: {
-        id: true,
-        customer: {
-          select: { firstName: true, lastName: true },
-        },
-        orderItems: {
-          where: { deletedAt: null },
-          select: {
-            id: true,
-            quantity: true,
-            laundryItem: {
-              select: { id: true, name: true, pricingType: true },
-            },
-          },
-        },
-        statusLogs: {
-          select: {
-            id: true,
-            status: true,
-            workerId: true,
-            totalItem: true,
-            createdAt: true,
-          },
-          orderBy: { createdAt: "desc" },
-        },
+      include: {
+        customer: { select: { firstName: true, lastName: true } },
+        orderItems: { include: { laundryItem: true } },
+        statusLogs: { orderBy: { createdAt: "desc" } },
         bypassRequests: {
           where: { deletedAt: null },
-          select: {
-            id: true,
-            status: true,
-            station: true,
-            notes: true,
-            expectedQuantity: true,
-            actualQuantity: true,
-            createdAt: true,
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+        payments: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+  },
+
+  /**
+   * Worker accepts (claims) an available task
+   */
+  async acceptTask(workerId: string, orderId: string, workerOutletId: string) {
+    if (!workerOutletId) throw AppError("You are not assigned to any outlet", 403);
+
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, outletId: workerOutletId, deletedAt: null },
+      include: { statusLogs: { orderBy: { createdAt: "desc" }, take: 1 } },
+    });
+
+    if (!order) throw AppError("Order not found", 404);
+
+    const activeLog = order.statusLogs[0];
+    if (!activeLog || activeLog.finishedAt) throw AppError("No active status found", 400);
+    if (activeLog.workerId) throw AppError("Task already taken by another worker", 400);
+
+    // If the order is at arrived_outlet, transition it to washing first
+    if (activeLog.status === "arrived_outlet") {
+      return prisma.$transaction(async (tx) => {
+        // Finish arrived_outlet
+        await tx.orderStatus.update({
+          where: { id: activeLog.id },
+          data: { finishedAt: new Date() },
+        });
+
+        // Create washing status with this worker assigned
+        await tx.orderStatus.create({
+          data: {
+            orderId,
+            status: "washing",
+            workerId,
+            startedAt: new Date(),
           },
+        });
+
+        return { success: true, message: "Task accepted, moved to washing" };
+      });
+    }
+
+    // Otherwise just assign the worker to the current status
+    await prisma.orderStatus.update({
+      where: { id: activeLog.id },
+      data: { workerId, startedAt: new Date() },
+    });
+
+    return { success: true, message: "Task accepted" };
+  },
+
+  /**
+   * Worker completes current station and advances order to next station.
+   * At packing: checks payment status to decide next state.
+   */
+  async completeTask(workerId: string, orderId: string) {
+    const activeLog = await prisma.orderStatus.findFirst({
+      where: { orderId, workerId, finishedAt: null },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!activeLog) throw AppError("No active task found for you on this order", 404);
+
+    // Determine next status based on current station
+    let nextStatus: OrderStatusEnum | null = null;
+
+    if (activeLog.status === "washing") {
+      nextStatus = "ironing";
+    } else if (activeLog.status === "ironing") {
+      nextStatus = "packing";
+    } else if (activeLog.status === "packing") {
+      // Special case: check payment status
+      const payment = await prisma.payment.findFirst({
+        where: { orderId, deletedAt: null, status: "paid" },
+      });
+
+      nextStatus = payment ? "ready_delivery" : "waiting_payment";
+    }
+
+    return prisma.$transaction(async (tx) => {
+      // Finish current station
+      await tx.orderStatus.update({
+        where: { id: activeLog.id },
+        data: { finishedAt: new Date() },
+      });
+
+      // Create next station if applicable
+      if (nextStatus) {
+        await tx.orderStatus.create({
+          data: {
+            orderId,
+            status: nextStatus,
+            startedAt: new Date(),
+          },
+        });
+      }
+
+      return { success: true, nextStatus };
+    });
+  },
+
+  /**
+   * Get order detail with full item list for item verification
+   */
+  async getOrderDetail(orderId: string, workerOutletId: string) {
+    if (!workerOutletId) throw AppError("You are not assigned to any outlet", 403);
+
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, outletId: workerOutletId, deletedAt: null },
+      include: {
+        customer: { select: { firstName: true, lastName: true } },
+        orderItems: { include: { laundryItem: true } },
+        statusLogs: { orderBy: { createdAt: "desc" } },
+        bypassRequests: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: "desc" },
+        },
+        payments: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+      },
+    });
+
+    if (!order) throw AppError("Order not found", 404);
+    return order;
+  },
+
+  /**
+   * Worker history: orders where this worker completed a station
+   */
+  async getWorkerHistory(workerId: string) {
+    return prisma.order.findMany({
+      where: {
+        statusLogs: {
+          some: {
+            workerId,
+            finishedAt: { not: null },
+          },
+        },
+        deletedAt: null,
+      },
+      include: {
+        customer: { select: { firstName: true, lastName: true } },
+        statusLogs: {
+          where: { workerId },
           orderBy: { createdAt: "desc" },
         },
       },
+      orderBy: { updatedAt: "desc" },
     });
-
-    if (!order) throw AppError("Order not found or not assigned to you", 404);
-
-    const latestStatus = order.statusLogs[0]?.status || "unknown";
-
-    // Calculate total expected items
-    const totalExpectedItems = order.orderItems.reduce(
-      (sum, item) => sum + item.quantity,
-      0,
-    );
-
-    return {
-      orderId: order.id,
-      customerName: `${order.customer.firstName || ""} ${order.customer.lastName || ""}`.trim(),
-      currentStation: latestStatus,
-      orderItems: order.orderItems,
-      totalExpectedItems,
-      bypassRequests: order.bypassRequests,
-    };
-  },
-
-  // ─── Submit Attendance: Check-In ──────────────────────────
-  async submitCheckIn(employeeId: string, shiftId?: string, notes?: string) {
-    const today = getTodayDate();
-
-    const existing = await prisma.attendance.findFirst({
-      where: { employeeId, date: today, deletedAt: null },
-    });
-    if (existing) throw AppError("Anda sudah melakukan check-in hari ini", 400);
-
-    const resolvedShiftId = await resolveShiftId(shiftId);
-    const status = determineStatus();
-
-    return prisma.attendance.create({
-      data: {
-        employeeId,
-        shiftId: resolvedShiftId,
-        checkIn: new Date(),
-        date: today,
-        status,
-        notes: notes || null,
-      },
-      include: INCLUDE_EMPLOYEE,
-    });
-  },
-
-  // ─── Submit Attendance: Check-Out ─────────────────────────
-  async submitCheckOut(employeeId: string) {
-    const attendance = await prisma.attendance.findFirst({
-      where: { employeeId, date: getTodayDate(), deletedAt: null },
-      include: { shift: true },
-    });
-    if (!attendance) throw AppError("Anda belum melakukan check-in hari ini", 400);
-    if (attendance.checkOut) throw AppError("Anda sudah melakukan check-out hari ini", 400);
-
-    return prisma.attendance.update({
-      where: { id: attendance.id },
-      data: { checkOut: new Date() },
-      include: INCLUDE_EMPLOYEE,
-    });
-  },
-
-  // ─── Attendance Status (today) ────────────────────────────
-  async getAttendanceStatus(employeeId: string) {
-    const attendance = await prisma.attendance.findFirst({
-      where: { employeeId, date: getTodayDate(), deletedAt: null },
-      include: { shift: true },
-    });
-    return {
-      isCheckedIn: !!attendance,
-      isCheckedOut: !!attendance?.checkOut,
-      attendance,
-    };
-  },
-
-  // ─── Attendance Log (own history) ─────────────────────────
-  async getAttendanceLog(
-    employeeId: string,
-    page: number,
-    limit: number,
-    month?: number,
-    year?: number,
-    sortBy = "date",
-    sortOrder = "desc",
-  ) {
-    const skip = (page - 1) * limit;
-    const where: any = { employeeId, deletedAt: null };
-    const dateFilter = buildDateFilter(month, year);
-    if (dateFilter) where.date = dateFilter;
-
-    const [attendances, total] = await Promise.all([
-      prisma.attendance.findMany({
-        where,
-        include: { shift: true },
-        orderBy: { [sortBy]: sortOrder },
-        skip,
-        take: limit,
-      }),
-      prisma.attendance.count({ where }),
-    ]);
-
-    return { attendances, pagination: calcPagination(page, limit, total) };
-  },
-
-  // ─── Attendance Report (admin outlet) ─────────────────────
-  async getAttendanceReport(
-    outletId: string,
-    page: number,
-    limit: number,
-    startDate?: string,
-    endDate?: string,
-    status?: string,
-    search?: string,
-    sortBy = "firstName",
-    sortOrder = "asc",
-  ) {
-    const skip = (page - 1) * limit;
-
-    const employeeWhere: any = {
-      outletId,
-      deletedAt: null,
-      role: { in: ["driver", "worker"] },
-    };
-    if (search) {
-      employeeWhere.OR = [
-        { firstName: { contains: search, mode: "insensitive" } },
-        { lastName: { contains: search, mode: "insensitive" } },
-      ];
-    }
-
-    const attWhere: any = { deletedAt: null };
-    const dateFilter = buildDateRangeFilter(startDate, endDate);
-    if (dateFilter) attWhere.date = dateFilter;
-    if (status) attWhere.status = status;
-
-    const [employees, total] = await Promise.all([
-      prisma.employee.findMany({
-        where: employeeWhere,
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          attendances: {
-            where: attWhere,
-            include: { shift: true },
-            orderBy: { date: "desc" },
-          },
-        },
-        skip,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
-      }),
-      prisma.employee.count({ where: employeeWhere }),
-    ]);
-
-    // Today's summary stats
-    const empCountWhere: any = {
-      outletId,
-      deletedAt: null,
-      role: { in: ["driver", "worker"] },
-    };
-    const [todayAttendances, totalEmployees] = await Promise.all([
-      prisma.attendance.findMany({
-        where: { employee: empCountWhere, date: getTodayDate(), deletedAt: null },
-      }),
-      prisma.employee.count({ where: empCountWhere }),
-    ]);
-
-    const summary = {
-      totalEmployees,
-      presentToday: todayAttendances.filter((a: any) => a.status === "present").length,
-      lateToday: todayAttendances.filter((a: any) => a.status === "late").length,
-      absentToday: totalEmployees - todayAttendances.length,
-    };
-
-    return { employees, summary, pagination: calcPagination(page, limit, total) };
-  },
-
-  // ─── Attendance Report per Employee (admin outlet) ────────
-  async getEmployeeAttendanceReport(
-    outletId: string,
-    employeeId: string,
-    page: number,
-    limit: number,
-    startDate?: string,
-    endDate?: string,
-    status?: string,
-    sortBy = "date",
-    sortOrder = "desc",
-  ) {
-    const employee = await prisma.employee.findFirst({
-      where: { id: employeeId, outletId, deletedAt: null },
-    });
-    if (!employee) throw AppError("Karyawan tidak ditemukan di outlet Anda", 404);
-
-    const skip = (page - 1) * limit;
-    const where: any = { employeeId, deletedAt: null };
-    const dateFilter = buildDateRangeFilter(startDate, endDate);
-    if (dateFilter) where.date = dateFilter;
-    if (status) where.status = status;
-
-    const [attendances, total] = await Promise.all([
-      prisma.attendance.findMany({
-        where,
-        include: { shift: true },
-        orderBy: { [sortBy]: sortOrder },
-        skip,
-        take: limit,
-      }),
-      prisma.attendance.count({ where }),
-    ]);
-
-    // Stats for this employee
-    const allRecords = await prisma.attendance.findMany({
-      where: { employeeId, deletedAt: null },
-    });
-    const stats = {
-      totalPresent: allRecords.filter((a) => a.status === "present").length,
-      totalLate: allRecords.filter((a) => a.status === "late").length,
-      totalAbsent: allRecords.filter((a) => a.status === "absent").length,
-      totalDays: allRecords.length,
-    };
-
-    return {
-      employee: {
-        id: employee.id,
-        firstName: employee.firstName,
-        lastName: employee.lastName,
-        role: employee.role,
-      },
-      attendances,
-      stats,
-      pagination: calcPagination(page, limit, total),
-    };
   },
 };
-
-// ─── Private Helper ──────────────────────────────────────
-async function resolveShiftId(shiftId?: string): Promise<string> {
-  if (shiftId) {
-    const shift = await prisma.shift.findFirst({
-      where: { id: shiftId, deletedAt: null },
-    });
-    if (!shift) throw AppError("Shift tidak ditemukan", 404);
-    return shiftId;
-  }
-
-  const defaultShift = await prisma.shift.findFirst({
-    where: { deletedAt: null },
-    orderBy: { createdAt: "asc" },
-  });
-  if (!defaultShift) throw AppError("Tidak ada shift tersedia. Hubungi admin.", 400);
-  return defaultShift.id;
-}
