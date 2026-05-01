@@ -1,4 +1,3 @@
-// src/config/midtrans.config.ts
 import midtransClient from "midtrans-client";
 import { MIDTRANS_CLIENT_KEY, MIDTRANS_SERVER_KEY } from "./main.config";
 
