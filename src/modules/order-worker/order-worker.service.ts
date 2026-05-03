@@ -158,7 +158,6 @@ export const orderWorkerService = {
           data: {
             orderId,
             status: nextStatus,
-            startedAt: new Date(),
           },
         });
       }

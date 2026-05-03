@@ -411,22 +411,41 @@ export const orderAdminService = {
     if (!order) throw AppError("Order not found", 404);
 
     const latestStatus = order.statusLogs[0]?.status;
+    const latestLog = order.statusLogs[0];
     const currentIdx = STATUS_FLOW.indexOf(latestStatus);
     const newIdx = STATUS_FLOW.indexOf(data.status);
 
-    if (newIdx <= currentIdx) {
+    if (newIdx < currentIdx) {
       throw AppError(
         `Cannot change status from "${latestStatus}" to "${data.status}". Status can only move forward.`,
         400,
       );
     }
 
-    const previousLog = order.statusLogs[0];
+    // Jika status sama, berarti Admin ingin meng-assign worker ke station saat ini yang masih kosong
+    if (newIdx === currentIdx) {
+      if (latestLog?.workerId) {
+        throw AppError(
+          `Worker already assigned to "${latestStatus}". Use advance to move to next station.`,
+          400,
+        );
+      }
+
+      await prisma.orderStatus.update({
+        where: { id: latestLog.id },
+        data: {
+          workerId: data.workerId,
+          startedAt: new Date(),
+        },
+      });
+
+      return { message: `Worker assigned to station "${latestStatus}"` };
+    }
 
     await prisma.$transaction(async (tx) => {
-      if (previousLog) {
+      if (latestLog) {
         await tx.orderStatus.update({
-          where: { id: previousLog.id },
+          where: { id: latestLog.id },
           data: { finishedAt: new Date() },
         });
       }
