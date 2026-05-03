@@ -404,8 +404,6 @@ export const orderCustomerService = {
         data: {
           orderId: id,
           status: "completed",
-          startedAt: new Date(),
-          finishedAt: new Date(),
         },
       });
 
