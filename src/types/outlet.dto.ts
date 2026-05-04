@@ -13,6 +13,8 @@ export interface CreateOutletDTO {
   maxServiceDistance: number;
   isActive: boolean;
   pricePerKg: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 // Data yang dikirim frontend saat UPDATE outlet
@@ -30,6 +32,8 @@ export interface UpdateOutletDTO {
   maxServiceDistance?: number;
   isActive?: boolean;
   pricePerKg?: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface GetOutletsQuery {
