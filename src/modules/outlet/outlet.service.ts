@@ -15,21 +15,49 @@ const buildFullAddress = (
 
 export const outletService = {
   async createOutlet(data: CreateOutletDTO) {
-    const existingOutlet = await prisma.outlet.findFirst({
+    // 1. Cek apakah ada outlet aktif dengan nama yang sama
+    const activeOutlet = await prisma.outlet.findFirst({
       where: { name: data.name, deletedAt: null },
     });
 
-    if (existingOutlet) throw AppError("Outlet with this name already exists", 409);
+    if (activeOutlet) {
+      throw AppError("Outlet with this name already exists", 409);
+    }
 
-    // Geocode alamat untuk mendapatkan koordinat presisi via OpenCage
-    const fullAddress = buildFullAddress(
-      data.address,
-      data.districtName,
-      data.cityName,
-      data.provinceName,
-    );
+    // 2. Cek apakah ada outlet yang sudah dihapus dengan nama yang sama
+    const deletedOutlet = await prisma.outlet.findFirst({
+      where: { name: data.name, NOT: { deletedAt: null } },
+    });
 
-    const { latitude, longitude } = await geocodeAddress(fullAddress);
+    // Geocode alamat untuk mendapatkan koordinat presisi via OpenCage HANYA JIKA latitude/longitude tidak dikirim manual
+    let latitude = data.latitude;
+    let longitude = data.longitude;
+
+    if (latitude === undefined || longitude === undefined) {
+      const fullAddress = buildFullAddress(
+        data.address,
+        data.districtName,
+        data.cityName,
+        data.provinceName,
+      );
+
+      const coords = await geocodeAddress(fullAddress);
+      latitude = coords.latitude;
+      longitude = coords.longitude;
+    }
+
+    if (deletedOutlet) {
+      // Restore the soft-deleted outlet with new data
+      return await prisma.outlet.update({
+        where: { id: deletedOutlet.id },
+        data: {
+          ...data,
+          latitude,
+          longitude,
+          deletedAt: null,
+        },
+      });
+    }
 
     const outlet = await prisma.outlet.create({
       data: {
@@ -114,21 +142,26 @@ export const outletService = {
 
     const updatePayload: any = { ...data };
 
-    // Jika ada perubahan alamat atau wilayah, re-geocode untuk koordinat baru
-    const addressChanged =
-      data.address || data.districtName || data.cityName || data.provinceName;
+    // Jika latitude/longitude dikirim dari frontend, gunakan itu.
+    // Jika tidak dikirim TAPI alamat/wilayah berubah, baru re-geocode.
+    const hasManualCoords = data.latitude !== undefined && data.longitude !== undefined;
+    
+    if (!hasManualCoords) {
+      const addressChanged =
+        data.address || data.districtName || data.cityName || data.provinceName;
 
-    if (addressChanged) {
-      const fullAddress = buildFullAddress(
-        data.address ?? outlet.address,
-        data.districtName ?? outlet.districtName,
-        data.cityName ?? outlet.cityName,
-        data.provinceName ?? outlet.provinceName,
-      );
+      if (addressChanged) {
+        const fullAddress = buildFullAddress(
+          data.address ?? outlet.address,
+          data.districtName ?? outlet.districtName,
+          data.cityName ?? outlet.cityName,
+          data.provinceName ?? outlet.provinceName,
+        );
 
-      const { latitude, longitude } = await geocodeAddress(fullAddress);
-      updatePayload.latitude = latitude;
-      updatePayload.longitude = longitude;
+        const { latitude, longitude } = await geocodeAddress(fullAddress);
+        updatePayload.latitude = latitude;
+        updatePayload.longitude = longitude;
+      }
     }
 
     const updatedOutlet = await prisma.outlet.update({
