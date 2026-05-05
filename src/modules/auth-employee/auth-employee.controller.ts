@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { LoginDTO } from "../../types/auth.dto";
 import { authEmployeeService } from "./auth-employee.service";
+import { NODE_ENV } from "../../config/main.config";
 
 export const authEmployeeController = {
   async login(req: Request, res: Response) {
@@ -11,8 +12,8 @@ export const authEmployeeController = {
 
     res.cookie("employeeAccessToken", token, {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: NODE_ENV === "production",
+      sameSite: NODE_ENV === "production" ? "none" : "lax",
       path: "/",
     });
 
@@ -46,8 +47,8 @@ export const authEmployeeController = {
   async logout(req: Request, res: Response) {
     res.clearCookie("employeeAccessToken", {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: NODE_ENV === "production",
+      sameSite: NODE_ENV === "production" ? "none" : "lax",
       path: "/",
     });
 
