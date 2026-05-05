@@ -8,7 +8,6 @@ import { POS_APP_URL } from "../../config/main.config";
 export const authController = {
   async register(req: Request, res: Response) {
     const register = req.body as RegisterDTO;
-    console.log(register.firstName);
 
     await authService.register(register);
 
