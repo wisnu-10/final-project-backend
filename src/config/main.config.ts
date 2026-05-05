@@ -25,3 +25,4 @@ export const RAJAONGKIR_BASE_URL = process.env.RAJAONGKIR_BASE_URL;
 export const MIDTRANS_MERCHANT_ID = process.env.MIDTRANS_MERCHANT_ID;
 export const MIDTRANS_CLIENT_KEY = process.env.MIDTRANS_CLIENT_KEY;
 export const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY;
+export const NODE_ENV = process.env.NODE_ENV;

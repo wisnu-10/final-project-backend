@@ -3,7 +3,7 @@ import { LoginDTO, RegisterDTO } from "../../types/auth.dto";
 import { authService } from "./auth.service";
 import AppError from "../../helpers/app-error.helper";
 import { body } from "express-validator";
-import { POS_APP_URL } from "../../config/main.config";
+import { POS_APP_URL, NODE_ENV } from "../../config/main.config";
 
 export const authController = {
   async register(req: Request, res: Response) {
@@ -47,8 +47,8 @@ export const authController = {
 
     res.cookie("accessToken", token, {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: NODE_ENV === "production",
+      sameSite: NODE_ENV === "production" ? "none" : "lax",
       path: "/",
     });
 
@@ -112,8 +112,8 @@ export const authController = {
   async logout(req: Request, res: Response) {
     res.clearCookie("accessToken", {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: NODE_ENV === "production",
+      sameSite: NODE_ENV === "production" ? "none" : "lax",
       path: "/",
     });
 
@@ -130,8 +130,8 @@ export const authController = {
 
     res.cookie("accessToken", token, {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: NODE_ENV === "production",
+      sameSite: NODE_ENV === "production" ? "none" : "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -147,8 +147,8 @@ export const authController = {
 
     res.cookie("accessToken", token, {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: NODE_ENV === "production",
+      sameSite: NODE_ENV === "production" ? "none" : "lax",
       path: "/",
     });
 
