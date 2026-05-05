@@ -22,6 +22,7 @@ import complaintRouter from "./modules/complaint-customer/complaint-customer-rou
 import reportRouter from "./modules/report/report.router"
 import { expirySchedule } from "./helpers/jobs/expiry-schema";
 import paymentCustomerRouter from "./modules/payment-customer/payment-customer.router"
+import cronRouter from "./modules/cron/cron.router";
 
 const PORT = process.env.PORT || 8000;
 const app = express();
@@ -31,7 +32,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(passport.initialize());
 
-expirySchedule()
+// expirySchedule() // Commented out to use cron-job.org external trigger instead
 
 // Auth & Session
 app.use("/auth", authRouter);
@@ -48,6 +49,9 @@ app.use("/order-admin", orderAdminRouter);
 app.use("/order-driver", orderDriverRouter);
 app.use("/order", orderCustomerRouter);
 app.use("/bypass-request", bypassRequestRouter);
+
+// External Job Triggers (cron-job.org)
+app.use("/jobs", cronRouter);
 
 // Master Data & Regions
 app.use("/address", addressCustomerRouter);
