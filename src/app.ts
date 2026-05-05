@@ -25,7 +25,7 @@ import paymentCustomerRouter from "./modules/payment-customer/payment-customer.r
 import cronRouter from "./modules/cron/cron.router";
 
 const PORT = process.env.PORT || 8000;
-const app = express();
+export const app = express();
 
 app.use(cors(corsOptions));
 app.use(express.json());
@@ -77,6 +77,11 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    expirySchedule()
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+export default app;
