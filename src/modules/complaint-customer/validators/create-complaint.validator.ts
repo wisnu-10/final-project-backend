@@ -5,16 +5,10 @@ export const createComplaintValidator = [
     .notEmpty()
     .withMessage("The login session can't be found, please log in first"),
 
-  body("orderId")
-    .notEmpty()
-    .withMessage("Order ID is required")
-    .isUUID()
-    .withMessage("Invalid Order ID format"),
+  body("invoiceNumber").notEmpty().withMessage("Invoice Number is required"),
 
   body("description")
     .notEmpty()
     .withMessage("Description is required")
-    .isLength({ min: 10 })
-    .withMessage("Description must be at least 10 characters long")
     .trim(),
 ];
