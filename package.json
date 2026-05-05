@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",
-    "start": "node dist/app.js"
+    "start": "node dist/app.js",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
