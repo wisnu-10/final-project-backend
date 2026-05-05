@@ -15,6 +15,7 @@ export function jwtVerifyEmployee(secretKey: string) {
       res.locals.payload = payload;
       next();
     } catch (error: any) {
+      console.log("JWT Verification failed for employee token:", error.message);
       return next(
         AppError(
           "Employee session is invalid or has expired. Please login again.",
