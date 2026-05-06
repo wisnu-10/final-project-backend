@@ -167,10 +167,10 @@ export const orderAdminService = {
   async getOrderById(
     employeeRole: string,
     employeeOutletId: string | null,
-    orderId: string,
+    invoiceNumber: string,
   ) {
     const whereClause: any = {
-      id: orderId,
+      invoiceNumber,
       deletedAt: null,
     };
 
@@ -246,17 +246,17 @@ export const orderAdminService = {
   async processOrder(
     employeeId: string,
     employeeOutletId: string | null,
-    orderId: string,
+    invoiceNumber: string,
     data: ProcessOrderDTO,
   ) {
     if (!employeeOutletId) {
       throw AppError("You are not assigned to any outlet", 403);
     }
 
-    // Cari order
+    // Cari order by invoiceNumber
     const order = await prisma.order.findFirst({
       where: {
-        id: orderId,
+        invoiceNumber,
         outletId: employeeOutletId,
         deletedAt: null,
       },
@@ -316,7 +316,7 @@ export const orderAdminService = {
       totalItemPrice += subTotal;
 
       return {
-        orderId,
+        orderId: order.id,
         laundryItemId: item.laundryItemId,
         quantity: item.quantity,
         subTotal,
@@ -329,7 +329,7 @@ export const orderAdminService = {
 
     const updatedOrder = await prisma.$transaction(async (tx) => {
       const updated = await tx.order.update({
-        where: { id: orderId },
+        where: { id: order.id },
         data: {
           adminId: employeeId,
           pricePerKg: currentPricePerKg,
@@ -354,7 +354,7 @@ export const orderAdminService = {
       // Create new status log → washing
       await tx.orderStatus.create({
         data: {
-          orderId,
+          orderId: order.id,
           status: "washing",
           workerId: data.workerId,
           startedAt: new Date(),
@@ -362,7 +362,7 @@ export const orderAdminService = {
       });
 
       await tx.payment.updateMany({
-        where: { orderId },
+        where: { orderId: order.id },
         data: { amount: totalPrice },
       });
 
@@ -375,7 +375,7 @@ export const orderAdminService = {
   async updateOrderStatus(
     employeeId: string,
     employeeOutletId: string | null,
-    orderId: string,
+    invoiceNumber: string,
     data: UpdateOrderStatusDTO,
   ) {
     if (!employeeOutletId) {
@@ -402,7 +402,7 @@ export const orderAdminService = {
     }
 
     const order = await prisma.order.findFirst({
-      where: { id: orderId, outletId: employeeOutletId, deletedAt: null },
+      where: { invoiceNumber, outletId: employeeOutletId, deletedAt: null },
       include: {
         statusLogs: { orderBy: { createdAt: "desc" }, take: 1 },
       },
@@ -452,7 +452,7 @@ export const orderAdminService = {
 
       await tx.orderStatus.create({
         data: {
-          orderId,
+          orderId: order.id,
           status: data.status,
           workerId: data.workerId,
           startedAt: new Date(),
