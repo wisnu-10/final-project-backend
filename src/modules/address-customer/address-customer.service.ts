@@ -21,6 +21,8 @@ export const addressCustomerService = {
       postalCode,
       notes,
       isPrimary,
+      latitude,
+      longitude,
     }: AddressCustomerDTO,
   ) {
 
@@ -64,29 +66,38 @@ export const addressCustomerService = {
 
     
 
-    /* ======================= OPENCAGE ======================= */
-    const fullAddress = `${address}, ${district.name}, ${city.name}, ${province.name}, indonesia`;
+    const latNum = Number(latitude);
+    const lngNum = Number(longitude);
+    const hasManualCoords = !isNaN(latNum) && !isNaN(lngNum) && latNum !== 0 && lngNum !== 0;
 
-    const geoRes = await axios.get(
-      "https://api.opencagedata.com/geocode/v1/json",
-      {
-        params: {
-          q: fullAddress,
-          key: OPENCAGE_API_KEY,
-          countrycode: "id",
-          limit: 1,
+    let latitudeGeo = latNum;
+    let longitudeGeo = lngNum;
+
+    // HANYA geocode jika latitude/longitude tidak dikirim atau bernilai 0
+    if (!hasManualCoords) {
+      const fullAddress = `${address}, ${district.name}, ${city.name}, ${province.name}, indonesia`;
+
+      const geoRes = await axios.get(
+        "https://api.opencagedata.com/geocode/v1/json",
+        {
+          params: {
+            q: fullAddress,
+            key: OPENCAGE_API_KEY,
+            countrycode: "id",
+            limit: 1,
+          },
         },
-      },
-    );
+      );
 
-    const result = geoRes.data.results[0];
+      const result = geoRes.data.results[0];
 
-    if (!result) {
-      throw AppError("Location not found", 400);
+      if (!result) {
+        throw AppError("Location not found", 400);
+      }
+
+      latitudeGeo = result.geometry.lat;
+      longitudeGeo = result.geometry.lng;
     }
-
-    const latitudeGeo = result.geometry.lat;
-    const longitudeGeo = result.geometry.lng;
 
     await prisma.$transaction(async (tx) => {
       if (isPrimary === true) {
@@ -141,6 +152,8 @@ export const addressCustomerService = {
       postalCode,
       notes,
       isPrimary,
+      latitude,
+      longitude,
     }: AddressCustomerDTO,
   ) {
 
@@ -194,29 +207,38 @@ export const addressCustomerService = {
       throw AppError("Invalid district", 400);
     }
 
-    /* ======================= OPENCAGE ======================= */
-    const fullAddress = `${address}, ${district.name}, ${city.name}, ${province.name}, indonesia`;
+    const latNum = Number(latitude);
+    const lngNum = Number(longitude);
+    const hasManualCoords = !isNaN(latNum) && !isNaN(lngNum) && latNum !== 0 && lngNum !== 0;
 
-    const geoRes = await axios.get(
-      "https://api.opencagedata.com/geocode/v1/json",
-      {
-        params: {
-          q: fullAddress,
-          key: OPENCAGE_API_KEY,
-          countrycode: "id",
-          limit: 1,
+    let latitudeGeo = latNum;
+    let longitudeGeo = lngNum;
+
+    // HANYA geocode jika latitude/longitude tidak dikirim atau bernilai 0
+    if (!hasManualCoords) {
+      const fullAddress = `${address}, ${district.name}, ${city.name}, ${province.name}, indonesia`;
+
+      const geoRes = await axios.get(
+        "https://api.opencagedata.com/geocode/v1/json",
+        {
+          params: {
+            q: fullAddress,
+            key: OPENCAGE_API_KEY,
+            countrycode: "id",
+            limit: 1,
+          },
         },
-      },
-    );
+      );
 
-    const result = geoRes.data.results[0];
+      const result = geoRes.data.results[0];
 
-    if (!result) {
-      throw AppError("Location not found", 400);
+      if (!result) {
+        throw AppError("Location not found", 400);
+      }
+
+      latitudeGeo = result.geometry.lat;
+      longitudeGeo = result.geometry.lng;
     }
-
-    const latitudeGeo = result.geometry.lat;
-    const longitudeGeo = result.geometry.lng;
 
     await prisma.$transaction(async (tx) => {
       if (isPrimary === true) {
