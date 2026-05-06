@@ -5,6 +5,6 @@ import { validateCronSecret } from "../../middlewares/cron.middleware";
 const router = Router();
 
 // Endpoint for cron-job.org to ping
-router.post("/expiry", validateCronSecret, triggerExpiryJobs);
+router.get("/expiry", validateCronSecret, triggerExpiryJobs);
 
 export default router;
