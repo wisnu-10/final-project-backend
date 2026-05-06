@@ -1,6 +1,14 @@
-# Washio Backend API
+# diLaundryin Backend
 
-The Washio Backend is a robust, scalable API built with Node.js and Express, designed to power the Washio Laundry Management System. It handles everything from customer orders and payment processing to employee attendance and regional management.
+[![Node.js](https://img.shields.io/badge/Node.js-20-green?style=flat)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-%23455A64?style=flat)](https://www.prisma.io/)
+[![Express](https://img.shields.io/badge/Express-5-black?style=flat)](https://expressjs.com/)
+[![Midtrans](https://img.shields.io/badge/Midtrans-Payment-%23FF5A5F?style=flat)](https://midtrans.com/)
+
+## Project Overview
+
+diLaundryin Backend is the API layer for a scalable laundry management system. Built with Express and TypeScript, it supports multi-role authentication, order lifecycle orchestration, payment processing, and dashboard-ready reporting. The architecture is modular to ensure maintainability and easier feature expansion.
 
 ## 🛠 Tech Stack
 
@@ -100,3 +108,15 @@ npm run dev
 - **Strict Typing**: Full TypeScript implementation for type safety.
 - **Centralized Error Handling**: Uniform error responses across all endpoints.
 - **Validation**: Input validation at the router level.
+
+## ⚙️ Challenges & Solutions
+
+This backend demonstrates an ability to manage complex business logic while keeping the API modular and testable. Multi-role access, payment webhooks, and scheduled cleanup tasks are separated into focused modules, reducing coupling and enabling efficient iteration.
+
+## 🤝 Contribution
+
+Please fork the repository and submit pull requests for feature enhancements or fixes. Keep changes scoped, document API updates, and maintain TypeScript safety.
+
+## License
+
+MIT License
