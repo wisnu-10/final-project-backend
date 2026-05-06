@@ -190,6 +190,7 @@ export const bypassRequestService = {
           order: {
             select: {
               id: true,
+              invoiceNumber: true,
               customer: {
                 select: { id: true, firstName: true, lastName: true },
               },
