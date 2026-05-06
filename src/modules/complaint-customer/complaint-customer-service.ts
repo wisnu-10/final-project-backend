@@ -7,7 +7,7 @@ export const complaintCustomerService = {
   async createComplaint(customerId: string, complaint: CreateComplaintDTO) {
     const order = await prisma.order.findFirst({
       where: {
-        id: complaint.orderId,
+        invoiceNumber: complaint.invoiceNumber,
         customerId: customerId,
       },
       include: {
@@ -25,7 +25,7 @@ export const complaintCustomerService = {
 
     const statusComplaint = await prisma.complaint.findFirst({
       where: {
-        orderId: complaint.orderId,
+        order: { invoiceNumber: complaint.invoiceNumber},
         customerId: customerId,
         status: {
           in: ["resolved", "rejected"],
@@ -41,7 +41,7 @@ export const complaintCustomerService = {
 
     await prisma.complaint.create({
       data: {
-        orderId: complaint.orderId,
+        orderId: order.id,
         customerId: customerId,
         description: complaint.description,
         status: "pending",
@@ -180,7 +180,7 @@ export const complaintCustomerService = {
 
     if (!existingEmployee) throw AppError("Employee not found", 404);
 
-    const complaint = await prisma.complaint.findUnique({
+    const complaint = await prisma.complaint.findFirst({
       where: { id: complaintId },
       include: { order: true }
     });

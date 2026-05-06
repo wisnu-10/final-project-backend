@@ -64,6 +64,8 @@ export const addressCustomerService = {
       throw AppError("Invalid district", 400);
     }
 
+    
+
     const latNum = Number(latitude);
     const lngNum = Number(longitude);
     const hasManualCoords = !isNaN(latNum) && !isNaN(lngNum) && latNum !== 0 && lngNum !== 0;

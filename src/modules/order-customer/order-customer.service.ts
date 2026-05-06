@@ -224,7 +224,7 @@ export const orderCustomerService = {
     return await prisma.order.findFirst({
       where: {
         customerId: customerId,
-        id: id,
+        invoiceNumber: id,
       },
       include: {
         pickupAddress: true,
