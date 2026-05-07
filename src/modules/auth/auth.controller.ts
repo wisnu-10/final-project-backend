@@ -49,6 +49,8 @@ export const authController = {
       httpOnly: true,
       secure: NODE_ENV === "production",
       sameSite: NODE_ENV === "production" ? "none" : "lax",
+      partitioned: true,
+      domain: ".vercel.app",
       path: "/",
     });
 
@@ -132,6 +134,8 @@ export const authController = {
       httpOnly: true,
       secure: NODE_ENV === "production",
       sameSite: NODE_ENV === "production" ? "none" : "lax",
+      partitioned: true,
+      domain: ".vercel.app",
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
