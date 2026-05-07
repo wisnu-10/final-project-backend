@@ -28,7 +28,7 @@ export const paymentCustomerService = {
 
     order.orderItems.forEach((item) => {
       if (item.laundryItem.pricingType === "per_item") {
-        const unitPrice = Number(item.laundryItem.price);
+        const unitPrice = Math.round(Number(item.laundryItem.price));
         const qty = item.quantity;
         const itemTotal = unitPrice * qty;
 
@@ -46,11 +46,11 @@ export const paymentCustomerService = {
     if (Number(order.totalWeight) > 0) {
       const priceKg = Number(order.pricePerKg);
       const weight = Number(order.totalWeight);
-      const kiloanTotal = priceKg * weight;
+      const kiloanTotal = Math.round(priceKg * weight);
 
       allItems.push({
-        price: priceKg,
-        quantity: weight,
+        price: kiloanTotal,
+        quantity: 1,
 
         name: `Basic Wash (${weight}kg x ${priceKg.toLocaleString("id-ID")})`,
       });
