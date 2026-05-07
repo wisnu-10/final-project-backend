@@ -14,7 +14,6 @@ export const authEmployeeController = {
       httpOnly: true,
       secure: NODE_ENV === "production" ? true : false,
       sameSite: NODE_ENV === "production" ? "none" : "lax",
-      partitioned: true,
       path: "/",
     });
 
