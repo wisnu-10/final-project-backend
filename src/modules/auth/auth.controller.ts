@@ -47,10 +47,9 @@ export const authController = {
 
     res.cookie("accessToken", token, {
       httpOnly: true,
-      secure: NODE_ENV === "production",
+      secure: NODE_ENV === "production" ? true : false,
       sameSite: NODE_ENV === "production" ? "none" : "lax",
       partitioned: true,
-      domain: ".vercel.app",
       path: "/",
     });
 
@@ -132,10 +131,9 @@ export const authController = {
 
     res.cookie("accessToken", token, {
       httpOnly: true,
-      secure: NODE_ENV === "production",
+      secure: NODE_ENV === "production" ? true : false,
       sameSite: NODE_ENV === "production" ? "none" : "lax",
       partitioned: true,
-      domain: ".vercel.app",
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
