@@ -49,7 +49,6 @@ export const authController = {
       httpOnly: true,
       secure: NODE_ENV === "production" ? true : false,
       sameSite: NODE_ENV === "production" ? "none" : "lax",
-      partitioned: true,
       path: "/",
     });
 
@@ -133,7 +132,6 @@ export const authController = {
       httpOnly: true,
       secure: NODE_ENV === "production" ? true : false,
       sameSite: NODE_ENV === "production" ? "none" : "lax",
-      partitioned: true,
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
