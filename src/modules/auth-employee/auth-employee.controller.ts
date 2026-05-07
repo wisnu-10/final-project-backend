@@ -14,6 +14,8 @@ export const authEmployeeController = {
       httpOnly: true,
       secure: NODE_ENV === "production",
       sameSite: NODE_ENV === "production" ? "none" : "lax",
+      partitioned: true,
+      domain: ".vercel.app",
       path: "/",
     });
 
