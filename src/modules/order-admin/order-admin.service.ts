@@ -325,7 +325,7 @@ export const orderAdminService = {
 
     const currentPricePerKg = Number((order as any).outlet.pricePerKg);
     const weightPrice = data.totalWeight * currentPricePerKg;
-    const totalPrice = weightPrice + totalItemPrice;
+    const totalPrice = Math.round(weightPrice + totalItemPrice);
 
     const updatedOrder = await prisma.$transaction(async (tx) => {
       const updated = await tx.order.update({
@@ -338,9 +338,11 @@ export const orderAdminService = {
         },
       });
 
-      await tx.orderItem.createMany({
-        data: orderItemsData,
-      });
+      if (orderItemsData.length > 0) {
+        await tx.orderItem.createMany({
+          data: orderItemsData,
+        });
+      }
 
       // Finish previous log (arrived_outlet)
       const prevLog = order.statusLogs[0];
@@ -461,6 +463,106 @@ export const orderAdminService = {
     });
 
     return { message: `Order status updated to "${data.status}"` };
+  },
+  async updateOrderDetails(
+    employeeId: string,
+    employeeOutletId: string | null,
+    invoiceNumber: string,
+    data: ProcessOrderDTO,
+  ) {
+    if (!employeeOutletId) {
+      throw AppError("You are not assigned to any outlet", 403);
+    }
+
+    const order = await prisma.order.findFirst({
+      where: {
+        invoiceNumber,
+        outletId: employeeOutletId,
+        deletedAt: null,
+      },
+      include: {
+        statusLogs: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+        outlet: true,
+      },
+    });
+
+    if (!order) throw AppError("Order not found", 404);
+
+    const latestStatus = order.statusLogs[0]?.status;
+    if (latestStatus !== "washing") {
+      throw AppError(
+        `Order cannot be edited because current status is "${latestStatus}". Edits are only allowed in "washing" status.`,
+        400,
+      );
+    }
+
+    let totalItemPrice = 0;
+    const laundryItems = await prisma.laundryItem.findMany({
+      where: {
+        id: { in: data.orderItems.map((item: any) => item.laundryItemId) },
+        deletedAt: null,
+      },
+    });
+
+    const orderItemsData = data.orderItems.map((item: any) => {
+      const laundryItem = laundryItems.find(
+        (li) => li.id === item.laundryItemId,
+      );
+      if (!laundryItem) throw AppError("Invalid laundry item", 400);
+
+      let subTotal = 0;
+      if (laundryItem.pricingType === "per_item") {
+        subTotal = Number(laundryItem.price) * item.quantity;
+      }
+
+      totalItemPrice += subTotal;
+
+      return {
+        orderId: order.id,
+        laundryItemId: item.laundryItemId,
+        quantity: item.quantity,
+        subTotal,
+      };
+    });
+
+    const currentPricePerKg = Number((order as any).outlet.pricePerKg);
+    const weightPrice = data.totalWeight * currentPricePerKg;
+    const totalPrice = Math.round(weightPrice + totalItemPrice);
+
+    return await prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          totalWeight: data.totalWeight,
+          totalPrice: totalPrice,
+        },
+      });
+
+      await tx.orderItem.deleteMany({
+        where: { orderId: order.id },
+      });
+
+      if (orderItemsData.length > 0) {
+        await tx.orderItem.createMany({
+          data: orderItemsData,
+        });
+      }
+
+      await tx.orderStatus.update({
+        where: { id: order.statusLogs[0].id },
+        data: { workerId: data.workerId },
+      });
+
+      await tx.payment.updateMany({
+        where: { orderId: order.id },
+        data: { amount: totalPrice },
+      });
+
+      return { message: "Order details updated successfully" };
+    });
   },
 
   async getOutletWorkers(outletId: string) {

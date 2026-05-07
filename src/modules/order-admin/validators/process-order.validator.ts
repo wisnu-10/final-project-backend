@@ -2,14 +2,26 @@ import { body } from "express-validator";
 
 export const processOrderValidator = [
   body("totalWeight")
-    .notEmpty()
+    .exists()
     .withMessage("Total weight is required.")
-    .isFloat({ gt: 0 })
-    .withMessage("Total weight must be a positive number."),
+    .isFloat({ min: 0 })
+    .withMessage("Total weight must be a non-negative number."),
 
   body("orderItems")
-    .isArray({ min: 1 })
-    .withMessage("Order items must be an array with at least 1 item."),
+    .isArray()
+    .withMessage("Order items must be an array."),
+
+  body().custom((value) => {
+    const weight = Number(value.totalWeight);
+    const hasItems = Array.isArray(value.orderItems) && value.orderItems.length > 0;
+
+    if (weight <= 0 && !hasItems) {
+      throw new Error(
+        "Process failed: You must provide either total weight (for kilo items) or at least one laundry item (for per-item items).",
+      );
+    }
+    return true;
+  }),
 
   body("orderItems.*.laundryItemId")
     .notEmpty()
