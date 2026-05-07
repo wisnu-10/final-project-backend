@@ -75,6 +75,25 @@ export const orderAdminController = {
     });
   },
 
+  async updateOrderDetails(req: Request, res: Response) {
+    const { employeeId, outletId } = res.locals.payload;
+    const { id } = req.params;
+    const data = req.body as ProcessOrderDTO;
+
+    const result = await orderAdminService.updateOrderDetails(
+      employeeId as string,
+      outletId as string,
+      id as string,
+      data,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Order details updated successfully",
+      data: result,
+    });
+  },
+
   async updateOrderStatus(req: Request, res: Response) {
     const { employeeId, outletId } = res.locals.payload;
     const { id } = req.params;

@@ -45,4 +45,13 @@ router.patch(
   orderAdminController.updateOrderStatus,
 );
 
+// Update order details (edit processed order)
+router.put(
+  "/:id",
+  employeeRoleVerify(["outlet_admin"]),
+  processOrderValidator,
+  expressRequestValidation,
+  orderAdminController.updateOrderDetails,
+);
+
 export default router;
